@@ -16,7 +16,6 @@ use index::{IndexInsert, IndexRemove};
 use tree::{LevelNode, Query, Leaf};
 use std::marker::PhantomData;
 
-#[allow(dead_code)]
 pub struct RRemove<P, D, S, MIN, MAX, T>
     where D: ArrayLength<P> + ArrayLength<(P, P)>,
           MIN: Unsigned,
@@ -30,7 +29,6 @@ pub struct RRemove<P, D, S, MIN, MAX, T>
     _phantom_t: PhantomData<T>,
 }
 
-#[allow(dead_code)]
 impl<P, D, S, MIN, MAX, T> RRemove<P, D, S, MIN, MAX, T>
     where P: Float
         + Signed

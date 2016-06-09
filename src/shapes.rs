@@ -20,7 +20,6 @@ pub struct Point<P, D>
     pub coords: GenericArray<P, D>,
 }
 
-#[allow(dead_code)]
 impl<P, D> Point<P, D>
     where P: Float
         + Signed
@@ -88,7 +87,6 @@ pub struct LineSegment<P, D>
     pub y: Point<P, D>,
 }
 
-#[allow(dead_code)]
 impl<P, D> LineSegment<P, D>
     where P: Float
     + Signed
@@ -117,8 +115,6 @@ pub struct Rect<P, D>
     pub edges: GenericArray<(P, P), D>,
 }
 
-
-#[allow(dead_code)]
 impl<P, D> Rect<P, D>
     where P: Float
     + Signed
@@ -214,7 +210,6 @@ impl<P, D> AsMut<[(P, P)]> for Rect<P, D>
 // the trait bound `shapes::Shape<P>: std::clone::Clone` is not satisfied [E0277]
 // the trait bound `shapes::Shape<P> + 'static: std::fmt::Debug` is not satisfied [E0277]
 //
-#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum Shapes<P, D>
     where D: ArrayLength<P> + ArrayLength<(P, P)>

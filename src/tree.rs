@@ -16,7 +16,6 @@ use std::rc::Rc;
 use index::{IndexInsert, IndexRemove};
 use std::ops::Deref;
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Leaf<P, D, S, T>
     where D: ArrayLength<P> + ArrayLength<(P, P)>
@@ -27,7 +26,6 @@ pub struct Leaf<P, D, S, T>
     _phantom_d: PhantomData<D>,
 }
 
-#[allow(dead_code)]
 impl<P, D, S, T> Leaf<P, D, S, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           D: ArrayLength<P> + ArrayLength<(P,P)>,
@@ -84,7 +82,6 @@ impl<P, D, S, T> Shape<P, D> for Leaf<P, D, S, T>
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub enum LevelNode<P, D, S, T>
     where D: ArrayLength<P> + ArrayLength<(P, P)>
@@ -99,7 +96,6 @@ pub enum LevelNode<P, D, S, T>
     },
 }
 
-#[allow(dead_code)]
 impl<P, D, S, T> LevelNode<P, D, S, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
           D: ArrayLength<P> + ArrayLength<(P,P)>,
@@ -182,7 +178,6 @@ impl<P, D, S, T> Shape<P, D> for LevelNode<P, D, S, T>
 }
 
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub enum Query<P, D, S, T>
     where D: ArrayLength<P> + ArrayLength<(P, P)>
@@ -191,7 +186,6 @@ pub enum Query<P, D, S, T>
     Overlaps(Rect<P, D>, PhantomData<S>, PhantomData<T>),
 }
 
-#[allow(dead_code)]
 impl<P, D, S, T> Query<P, D, S, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           D: ArrayLength<P> + ArrayLength<(P,P)>,
@@ -220,7 +214,6 @@ impl<P, D, S, T> Query<P, D, S, T>
     }
 }
 
-#[allow(dead_code)]
 pub struct SpatialTree<P, D, S, I, R, T>
     where D: ArrayLength<P> + ArrayLength<(P, P)>,
           I: IndexInsert<P, D, S, T>,
@@ -232,7 +225,6 @@ pub struct SpatialTree<P, D, S, I, R, T>
     len: usize,
 }
 
-#[allow(dead_code)]
 impl<P, D, S, I, R, T> SpatialTree<P, D, S, I, R, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           D: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
@@ -296,7 +288,6 @@ impl<P, D, S, I, R, T> SpatialTree<P, D, S, I, R, T>
     }
 }
 
-#[allow(dead_code)]
 pub struct Iter<'tree, P, D, S, T>
     where P: 'tree,
           D: ArrayLength<P> + ArrayLength<(P, P)> + 'tree,
@@ -309,7 +300,6 @@ pub struct Iter<'tree, P, D, S, T>
     finished: bool,
 }
 
-#[allow(dead_code)]
 impl<'tree, P, D, S, T> Iter<'tree, P, D, S, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           D: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
@@ -369,7 +359,6 @@ impl<'tree, P, D, S, T> Iterator for Iter<'tree, P, D, S, T>
 }
 
 
-#[allow(dead_code)]
 pub struct LevelIter<'tree, P, D, S, T>
     where P: 'tree,
           D: ArrayLength<P> + ArrayLength<(P, P)> + 'tree,
@@ -383,7 +372,6 @@ pub struct LevelIter<'tree, P, D, S, T>
 }
 
 
-#[allow(dead_code)]
 impl<'tree, P, D, S, T> LevelIter<'tree, P, D, S, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           D: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
@@ -459,7 +447,6 @@ impl<'tree, P, D, S, T> Iterator for LevelIter<'tree, P, D, S, T>
     }
 }
 
-#[allow(dead_code)]
 pub struct IterMut<'tree, P, D, S, T>
     where P: 'tree,
           D: ArrayLength<P> + ArrayLength<(P, P)> + 'tree,
@@ -472,7 +459,6 @@ pub struct IterMut<'tree, P, D, S, T>
     finished: bool,
 }
 
-#[allow(dead_code)]
 impl<'tree, P, D, S, T> IterMut<'tree, P, D, S, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           D: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
@@ -536,9 +522,6 @@ impl<'tree, P, D, S, T> Iterator for IterMut<'tree, P, D, S, T>
     }
 }
 
-
-
-#[allow(dead_code)]
 pub struct LevelIterMut<'tree, P, D, S, T>
     where P: 'tree,
           D: ArrayLength<P> + ArrayLength<(P, P)> + 'tree,
@@ -551,7 +534,6 @@ pub struct LevelIterMut<'tree, P, D, S, T>
     finished: bool,
 }
 
-#[allow(dead_code)]
 impl<'tree, P, D, S, T> LevelIterMut<'tree, P, D, S, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default +'tree,
           D: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,

@@ -20,7 +20,6 @@ use generic_array::ArrayLength;
 const D_REINSERT_P: f32 = 0.30f32;
 const D_CHOOSE_SUBTREE_P: usize = 32;
 
-#[allow(dead_code)]
 #[derive(Debug)]
 #[must_use]
 enum InsertResult<P, D, S, T>
@@ -31,45 +30,6 @@ enum InsertResult<P, D, S, T>
     Split(LevelNode<P, D, S, T>),
 }
 
-#[allow(dead_code)]
-impl<P, D, S, T> InsertResult<P, D, S, T>
-    where P: Float
-        + Signed
-        + Bounded
-        + MulAssign
-        + AddAssign
-        + ToPrimitive
-        + FromPrimitive
-        + Copy
-        + Debug,
-        D: ArrayLength<P> + ArrayLength<(P, P)>,
-        S: Shape<P, D>
-{
-
-    pub fn is_ok(&self) -> bool {
-        if let InsertResult::Ok = *self {
-            return true;
-        }
-        false
-    }
-
-    pub fn is_reinsert(&self) -> bool {
-        if let InsertResult::Reinsert(_) = *self {
-            return true;
-        }
-        false
-    }
-
-    pub fn is_split(&self) -> bool {
-        if let InsertResult::Split(_) = *self {
-            return true;
-        }
-        false
-    }
-}
-
-
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct RStarInsert<P, D, S, MIN, MAX, T>
     where D: ArrayLength<P> + ArrayLength<(P, P)>,
@@ -87,7 +47,6 @@ pub struct RStarInsert<P, D, S, MIN, MAX, T>
 }
 
 
-#[allow(dead_code)]
 impl<P, D, S, MIN, MAX, T> RStarInsert<P, D, S, MIN, MAX, T>
     where P: Float
         + Signed
