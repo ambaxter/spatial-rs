@@ -25,7 +25,6 @@ mod index;
 mod vecext;
 
 use typenum::{U32, U64, Unsigned};
-use tree::SpatialTree;
 use index::r::RRemove;
 use index::rstar::RStarInsert;
 use generic_array::ArrayLength;
@@ -34,7 +33,7 @@ use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
 use std::fmt::Debug;
 use std::marker::PhantomData;
-pub use tree::Query;
+pub use tree::{SpatialTree, Query};
 
 pub struct RStar<P, D, S, T> {
     _p: PhantomData<P>,
