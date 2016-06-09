@@ -23,10 +23,11 @@ pub trait IndexRemove<P, D, S, T, I>
     where D: ArrayLength<P> + ArrayLength<(P, P)>,
           I: IndexInsert<P, D, S, T>
 {
-    fn remove_from_root<F: FnMut(&T) -> bool>(&self,
-                        root: Option<LevelNode<P, D, S, T>>,
-                        insert_index: &I,
-                        query: Query<P, D, S, T>,
-                        mut f: F)
-                        -> (Option<LevelNode<P, D, S, T>>, Vec<Leaf<P, D, S, T>>);
+    fn remove_from_root<F: FnMut(&T) -> bool>
+        (&self,
+         root: Option<LevelNode<P, D, S, T>>,
+         insert_index: &I,
+         query: Query<P, D, S, T>,
+         mut f: F)
+         -> (Option<LevelNode<P, D, S, T>>, Vec<Leaf<P, D, S, T>>);
 }

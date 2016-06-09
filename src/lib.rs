@@ -35,14 +35,14 @@ use std::ops::{MulAssign, AddAssign};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-pub struct RStar<P, D, S, T>{
+pub struct RStar<P, D, S, T> {
     _p: PhantomData<P>,
     _d: PhantomData<D>,
     _s: PhantomData<S>,
-    _t: PhantomData<T>
+    _t: PhantomData<T>,
 }
 
-impl<P, D, S, T> RStar<P, D, S, T> 
+impl<P, D, S, T> RStar<P, D, S, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           D: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
           S: Shape<P, D>

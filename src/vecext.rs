@@ -130,7 +130,7 @@ mod tests {
         fn contains_all(&self, that: &Vec<T>) -> bool;
     }
 
-    impl<T> ContainsAll<T> for Vec<T> 
+    impl<T> ContainsAll<T> for Vec<T>
         where T: PartialEq
     {
         fn contains_all(&self, items: &Vec<T>) -> bool {
@@ -156,7 +156,7 @@ mod tests {
             assert!(split_v.len() == 3);
             assert!(right.contains_all(&split_v));
         }
-        
+
     }
 
     #[test]
@@ -179,7 +179,10 @@ mod tests {
         let mut v = vec![1, 2, 3, 4, 5, 6];
         let left = vec![0, 1, 2];
 
-        v.retain_mut(|x| {*x -=1; *x < 3});
+        v.retain_mut(|x| {
+            *x -= 1;
+            *x < 3
+        });
         assert!(v.len() == 3);
         assert!(left.contains_all(&v));
     }

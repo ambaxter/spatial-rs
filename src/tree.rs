@@ -25,11 +25,10 @@ pub struct Leaf<P, D, S, T>
     pub item: T,
     _phantom_p: PhantomData<P>,
     _phantom_d: PhantomData<D>,
-    
 }
 
 #[allow(dead_code)]
-impl<P, D, S, T> Leaf<P, D, S, T> 
+impl<P, D, S, T> Leaf<P, D, S, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           D: ArrayLength<P> + ArrayLength<(P,P)>,
           S: Shape<P, D>
@@ -314,7 +313,7 @@ pub struct Iter<'tree, P, D, S, T>
 impl<'tree, P, D, S, T> Iter<'tree, P, D, S, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           D: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          S: Shape<P, D> + 'tree, 
+          S: Shape<P, D> + 'tree,
           T: 'tree
 {
     pub fn new(query: Query<P, D, S, T>, root: Option<&'tree LevelNode<P, D, S, T>>) -> Iter<'tree, P, D, S, T> {
