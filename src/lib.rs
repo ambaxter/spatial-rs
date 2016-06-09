@@ -24,6 +24,38 @@ mod tree;
 mod index;
 mod vecext;
 
+use typenum::{U32, U64, Unsigned};
+use tree::SpatialTree;
+use index::r::RRemove;
+use index::rstar::RStarInsert;
+use generic_array::ArrayLength;
+use shapes::Shape;
+use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
+use std::ops::{MulAssign, AddAssign};
+use std::fmt::Debug;
+use std::marker::PhantomData;
+
+pub struct RStar<P, D, S, T>{
+    _p: PhantomData<P>,
+    _d: PhantomData<D>,
+    _s: PhantomData<S>,
+    _t: PhantomData<T>
+}
+
+impl<P, D, S, T> RStar<P, D, S, T> 
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
+          D: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
+          S: Shape<P, D>
+{
+    pub fn new() -> SpatialTree<P, D, S, RStarInsert<P, D, S, U32, U64, T>, RRemove<P, D, S, U32, U64, T>, T> {
+        SpatialTree::new(RStarInsert::new(), RRemove::new())
+    }
+
+    pub fn new_with_limits<MIN: Unsigned, MAX: Unsigned>() -> SpatialTree<P, D, S, RStarInsert<P, D, S, MIN, MAX, T>, RRemove<P, D, S, MIN, MAX, T>, T> {
+        SpatialTree::new(RStarInsert::new(), RRemove::new())
+    }
+}
+
 #[cfg(test)]
 mod tests {
 

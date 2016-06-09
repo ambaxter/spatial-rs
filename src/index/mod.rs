@@ -7,25 +7,26 @@
 
 use generic_array::ArrayLength;
 use tree::{LevelNode, Query, Leaf};
-mod rstar;
-mod r;
+pub mod rstar;
+pub mod r;
 
-pub trait IndexInsert<P, D, T>
+pub trait IndexInsert<P, D, S, T>
     where D: ArrayLength<P> + ArrayLength<(P, P)>
 {
     fn insert_into_root(&self,
-                        root: Option<LevelNode<P, D, T>>,
-                        leaf: Leaf<P, D, T>)
-                        -> Option<LevelNode<P, D, T>>;
+                        root: Option<LevelNode<P, D, S, T>>,
+                        leaf: Leaf<P, D, S, T>)
+                        -> Option<LevelNode<P, D, S, T>>;
 }
 
-pub trait IndexRemove<P, D, T, I>
+pub trait IndexRemove<P, D, S, T, I>
     where D: ArrayLength<P> + ArrayLength<(P, P)>,
-          I: IndexInsert<P, D, T>
+          I: IndexInsert<P, D, S, T>
 {
-    fn remove_from_root(&self,
-                        root: Option<LevelNode<P, D, T>>,
+    fn remove_from_root<F: FnMut(&T) -> bool>(&self,
+                        root: Option<LevelNode<P, D, S, T>>,
                         insert_index: &I,
-                        query: Query<P, D, T>)
-                        -> (Option<LevelNode<P, D, T>>, Vec<Leaf<P, D, T>>);
+                        query: Query<P, D, S, T>,
+                        mut f: F)
+                        -> (Option<LevelNode<P, D, S, T>>, Vec<Leaf<P, D, S, T>>);
 }
