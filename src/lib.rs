@@ -33,7 +33,7 @@ use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
 use std::fmt::Debug;
 use std::marker::PhantomData;
-pub use tree::{SpatialTree, Query};
+pub use tree::{SpatialMap, Query};
 
 pub struct RStar<P, D, S, T> {
     _p: PhantomData<P>,
@@ -47,12 +47,12 @@ impl<P, D, S, T> RStar<P, D, S, T>
           D: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
           S: Shape<P, D>
 {
-    pub fn new() -> SpatialTree<P, D, S, RStarInsert<P, D, S, U32, U64, T>, RRemove<P, D, S, U32, U64, T>, T> {
-        SpatialTree::new(RStarInsert::new(), RRemove::new())
+    pub fn new() -> SpatialMap<P, D, S, RStarInsert<P, D, S, U32, U64, T>, RRemove<P, D, S, U32, U64, T>, T> {
+        SpatialMap::new(RStarInsert::new(), RRemove::new())
     }
 
-    pub fn new_with_limits<MIN: Unsigned, MAX: Unsigned>() -> SpatialTree<P, D, S, RStarInsert<P, D, S, MIN, MAX, T>, RRemove<P, D, S, MIN, MAX, T>, T> {
-        SpatialTree::new(RStarInsert::new(), RRemove::new())
+    pub fn new_with_limits<MIN: Unsigned, MAX: Unsigned>() -> SpatialMap<P, D, S, RStarInsert<P, D, S, MIN, MAX, T>, RRemove<P, D, S, MIN, MAX, T>, T> {
+        SpatialMap::new(RStarInsert::new(), RRemove::new())
     }
 }
 

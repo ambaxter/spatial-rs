@@ -214,7 +214,7 @@ impl<P, D, S, T> Query<P, D, S, T>
     }
 }
 
-pub struct SpatialTree<P, D, S, I, R, T>
+pub struct SpatialMap<P, D, S, I, R, T>
     where D: ArrayLength<P> + ArrayLength<(P, P)>,
           I: IndexInsert<P, D, S, T>,
           R: IndexRemove<P, D, S, T, I>
@@ -225,7 +225,7 @@ pub struct SpatialTree<P, D, S, I, R, T>
     len: usize,
 }
 
-impl<P, D, S, I, R, T> SpatialTree<P, D, S, I, R, T>
+impl<P, D, S, I, R, T> SpatialMap<P, D, S, I, R, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           D: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
           S: Shape<P, D>,
@@ -233,8 +233,8 @@ impl<P, D, S, I, R, T> SpatialTree<P, D, S, I, R, T>
           R: IndexRemove<P, D, S, T, I>,
 {
 
-    pub fn new(insert_index: I, remove_index: R) -> SpatialTree<P, D, S, I, R, T> {
-        SpatialTree{insert_index: insert_index, remove_index: remove_index, root: None, len: 0}
+    pub fn new(insert_index: I, remove_index: R) -> SpatialMap<P, D, S, I, R, T> {
+        SpatialMap{insert_index: insert_index, remove_index: remove_index, root: None, len: 0}
     }
 
     pub fn insert(&mut self, shape: S, item: T) {
