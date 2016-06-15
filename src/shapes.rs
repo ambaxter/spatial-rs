@@ -156,13 +156,6 @@ impl<P, DIM> Rect<P, DIM>
         }
         Rect{edges: edges}
     }
-
-    /// The sum of all of the Rect's lengths
-    //TODO: Move this into a trait
-    pub fn margin(&self) -> P {
-        self.edges.deref().iter()
-            .fold(Zero::zero(), | margin,  &(x, y)| margin + y - x)
-    }
 }
 
 impl<P, DIM> Deref for Rect<P, DIM>

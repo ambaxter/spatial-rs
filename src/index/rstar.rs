@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 
 use num::{Zero, Signed, Float, Bounded, ToPrimitive, FromPrimitive};
-use std::ops::{MulAssign, AddAssign, Range};
+use std::ops::{MulAssign, AddAssign, Range, Deref};
 use tree::{LevelNode, Leaf};
 use index::IndexInsert;
 use shapes::{Shape, Rect};
@@ -19,6 +19,21 @@ use generic_array::ArrayLength;
 
 const D_REINSERT_P: f32 = 0.30f32;
 const D_CHOOSE_SUBTREE_P: usize = 32;
+
+/// The sum of all of the Shapes's lengths. Used in the R* algorithm
+pub trait Margin<P> {
+    fn margin(&self) -> P;
+}
+
+impl<P, DIM> Margin<P> for Rect<P, DIM> 
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
+          DIM: ArrayLength<P> + ArrayLength<(P, P)>
+{
+    fn margin(&self) -> P {
+        self.edges.deref().iter()
+            .fold(Zero::zero(), | margin,  &(x, y)| margin + y - x)
+    }
+}
 
 #[derive(Debug)]
 #[must_use]
