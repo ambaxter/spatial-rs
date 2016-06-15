@@ -10,24 +10,26 @@ use tree::{LevelNode, Query, Leaf};
 pub mod rstar;
 pub mod r;
 
-pub trait IndexInsert<P, D, S, T>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>
+/// Insert the leaf into the root
+pub trait IndexInsert<P, DIM, SHAPE, T>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     fn insert_into_root(&self,
-                        root: Option<LevelNode<P, D, S, T>>,
-                        leaf: Leaf<P, D, S, T>)
-                        -> Option<LevelNode<P, D, S, T>>;
+                        root: Option<LevelNode<P, DIM, SHAPE, T>>,
+                        leaf: Leaf<P, DIM, SHAPE, T>)
+                        -> Option<LevelNode<P, DIM, SHAPE, T>>;
 }
 
-pub trait IndexRemove<P, D, S, T, I>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>,
-          I: IndexInsert<P, D, S, T>
+/// Remove entries from the tree that match the query, but not the retain function f.
+pub trait IndexRemove<P, DIM, SHAPE, T, I>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
+          I: IndexInsert<P, DIM, SHAPE, T>
 {
     fn remove_from_root<F: FnMut(&T) -> bool>
         (&self,
-         root: Option<LevelNode<P, D, S, T>>,
+         root: Option<LevelNode<P, DIM, SHAPE, T>>,
          insert_index: &I,
-         query: Query<P, D, S, T>,
+         query: Query<P, DIM, SHAPE, T>,
          mut f: F)
-         -> (Option<LevelNode<P, D, S, T>>, Vec<Leaf<P, D, S, T>>);
+         -> (Option<LevelNode<P, DIM, SHAPE, T>>, Vec<Leaf<P, DIM, SHAPE, T>>);
 }

@@ -14,38 +14,31 @@ use generic_array::{ArrayLength, GenericArray};
 
 /// An n-dimensional point
 #[derive(Debug, Clone)]
-pub struct Point<P, D>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>
+pub struct Point<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
-    pub coords: GenericArray<P, D>,
+    pub coords: GenericArray<P, DIM>,
 }
 
-impl<P, D> Point<P, D>
-    where P: Float
-        + Signed
-        + Bounded
-        + MulAssign
-        + AddAssign
-        + ToPrimitive
-        + FromPrimitive
-        + Copy
-        + Debug,
-    D: ArrayLength<P> + ArrayLength<(P,P)>
+impl<P, DIM> Point<P, DIM>
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
+    DIM: ArrayLength<P> + ArrayLength<(P,P)>
 {
-    pub fn new(coords: GenericArray<P, D>) -> Point<P, D> {
+    /// New Point from a `GenericArray`
+    pub fn new(coords: GenericArray<P, DIM>) -> Point<P, DIM> {
         for coord in coords.deref() {
             assert!(coord.is_finite(), "{:?} should be finite", coord);
         }
         Point{coords: coords}
     }
-
-    pub fn from_slice(slice: &[P]) -> Point<P, D> {
+    /// New Point from a slice
+    pub fn from_slice(slice: &[P]) -> Point<P, DIM> {
         Point::new(GenericArray::from_slice(slice))
     }
 }
 
-impl<P, D> Deref for Point<P, D>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>
+impl<P, DIM> Deref for Point<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     type Target = [P];
 
@@ -54,68 +47,63 @@ impl<P, D> Deref for Point<P, D>
     }
 }
 
-impl<P, D> DerefMut for Point<P, D>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>
+impl<P, DIM> DerefMut for Point<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     fn deref_mut(&mut self) -> &mut [P] {
         self.coords.deref_mut()
     }
 }
 
-impl<P, D> AsRef<[P]> for Point<P, D>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>
+impl<P, DIM> AsRef<[P]> for Point<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     fn as_ref(&self) -> &[P] {
         self.deref()
     }
 }
 
-impl<P, D> AsMut<[P]> for Point<P, D>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>
+impl<P, DIM> AsMut<[P]> for Point<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     fn as_mut(&mut self) -> &mut [P] {
         self.deref_mut()
     }
 }
 
+/// An n-dimensional line segment 
 #[derive(Debug, Clone)]
-pub struct LineSegment<P, D>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>
+pub struct LineSegment<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     // TODO: Would this be better as [(P,P)]?
-    pub x: Point<P, D>,
-    pub y: Point<P, D>,
+    pub x: Point<P, DIM>,
+    pub y: Point<P, DIM>,
 }
 
-impl<P, D> LineSegment<P, D>
-    where P: Float
-    + Signed
-    + Bounded
-    + MulAssign
-    + AddAssign
-    + ToPrimitive
-    + FromPrimitive
-    + Copy
-    + Debug,
-    D: ArrayLength<P> + ArrayLength<(P,P)> {
+impl<P, DIM> LineSegment<P, DIM>
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
+    DIM: ArrayLength<P> + ArrayLength<(P,P)> {
 
-    pub fn new(x: GenericArray<P, D>, y: GenericArray<P, D>) -> LineSegment<P, D> {
+    /// New LineSegment from two GenericArrays representing either end
+    pub fn new(x: GenericArray<P, DIM>, y: GenericArray<P, DIM>) -> LineSegment<P, DIM> {
         LineSegment{x: Point::new(x), y: Point::new(y)}
     }
-
-    pub fn from_slices(x: &[P], y: &[P]) -> LineSegment<P, D> {
+    /// New LineSegment from two slices representing either end 
+    pub fn from_slices(x: &[P], y: &[P]) -> LineSegment<P, DIM> {
         LineSegment{x: Point::from_slice(x), y: Point::from_slice(y)}
     }
 }
 
+/// An n-dimensional rectangle
 #[derive(Debug, Clone)]
-pub struct Rect<P, D>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>
+pub struct Rect<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
-    pub edges: GenericArray<(P, P), D>,
+    pub edges: GenericArray<(P, P), DIM>,
 }
 
-impl<P, D> Rect<P, D>
+impl<P, DIM> Rect<P, DIM>
     where P: Float
     + Signed
     + Bounded
@@ -126,9 +114,10 @@ impl<P, D> Rect<P, D>
     + Copy
     + Debug
     + Default,
-    D: ArrayLength<P> + ArrayLength<(P,P)> {
+    DIM: ArrayLength<P> + ArrayLength<(P,P)> {
 
-    pub fn new(mut edges: GenericArray<(P,P), D>) -> Rect<P,D> {
+    /// New Rect from a `GenericArray`
+    pub fn new(mut edges: GenericArray<(P,P), DIM>) -> Rect<P,DIM> {
 // ensure that the edge coordinates are valid and ordered correctly
         for &mut (ref mut x, ref mut y) in edges.deref_mut() {
             assert!(x.is_finite(), "{:?} should be finite", x);
@@ -140,14 +129,16 @@ impl<P, D> Rect<P, D>
     }
 
 // TODO: I'm not sure if I like this
-    pub fn from_corners(x: &Point<P, D>, y: &Point<P, D>) -> Rect<P, D>{
+    /// New Rect from corners
+    pub fn from_corners(x: &Point<P, DIM>, y: &Point<P, DIM>) -> Rect<P, DIM>{
         let mut edges = Rect::max_inverted();
         x.expand_rect_to_fit(&mut edges);
         y.expand_rect_to_fit(&mut edges);
         edges
     }
 
-    pub fn max_inverted() -> Rect<P, D> {
+    // An inverted Rect where ever dimension's (x, y) coordinates are (MAX, MIN). Simplifies finding boundaries.
+    pub fn max_inverted() -> Rect<P, DIM> {
         let mut edges = GenericArray::new();
         for &mut (ref mut x, ref mut y) in edges.as_mut() {
             *x = Bounded::max_value();
@@ -156,7 +147,8 @@ impl<P, D> Rect<P, D>
         Rect{edges: edges}
     }
 
-    pub fn max() -> Rect<P, D> {
+    /// The largest possible rect 
+    pub fn max() -> Rect<P, DIM> {
         let mut edges = GenericArray::new();
         for &mut (ref mut x, ref mut y) in edges.as_mut() {
             *x = Bounded::min_value();
@@ -165,14 +157,16 @@ impl<P, D> Rect<P, D>
         Rect{edges: edges}
     }
 
+    /// The sum of all of the Rect's lengths
+    //TODO: Move this into a trait
     pub fn margin(&self) -> P {
         self.edges.deref().iter()
             .fold(Zero::zero(), | margin,  &(x, y)| margin + y - x)
     }
 }
 
-impl<P, D> Deref for Rect<P, D>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>
+impl<P, DIM> Deref for Rect<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     type Target = [(P, P)];
 
@@ -181,24 +175,24 @@ impl<P, D> Deref for Rect<P, D>
     }
 }
 
-impl<P, D> DerefMut for Rect<P, D>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>
+impl<P, DIM> DerefMut for Rect<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     fn deref_mut(&mut self) -> &mut [(P, P)] {
         self.edges.deref_mut()
     }
 }
 
-impl<P, D> AsRef<[(P, P)]> for Rect<P, D>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>
+impl<P, DIM> AsRef<[(P, P)]> for Rect<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     fn as_ref(&self) -> &[(P, P)] {
         self.deref()
     }
 }
 
-impl<P, D> AsMut<[(P, P)]> for Rect<P, D>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>
+impl<P, DIM> AsMut<[(P, P)]> for Rect<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     fn as_mut(&mut self) -> &mut [(P, P)] {
         self.deref_mut()
@@ -210,13 +204,14 @@ impl<P, D> AsMut<[(P, P)]> for Rect<P, D>
 // the trait bound `shapes::Shape<P>: std::clone::Clone` is not satisfied [E0277]
 // the trait bound `shapes::Shape<P> + 'static: std::fmt::Debug` is not satisfied [E0277]
 //
+///A convenience enum that contains `Point`, `LineSegment`, and `Rect`
 #[derive(Debug, Clone)]
-pub enum Shapes<P, D>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>
+pub enum Shapes<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
-    Point(Point<P, D>),
-    LineSegment(LineSegment<P, D>),
-    Rect(Rect<P, D>), // Other(Box<Shape<P>>)
+    Point(Point<P, DIM>),
+    LineSegment(LineSegment<P, DIM>),
+    Rect(Rect<P, DIM>), // Other(Box<Shape<P>>)
 }
 
 /// The minimum functionality required to insert a shape into an RTree
@@ -226,7 +221,7 @@ pub enum Shapes<P, D>
 ///
 /// All operations should assume self.dim() == edges.len()
 
-pub trait Shape<P, D: ArrayLength<P> + ArrayLength<(P, P)>> {
+pub trait Shape<P, DIM: ArrayLength<P> + ArrayLength<(P, P)>> {
     /// The shape's dimension count
     fn dim(&self) -> usize;
 
@@ -240,33 +235,25 @@ pub trait Shape<P, D: ArrayLength<P> + ArrayLength<(P, P)>> {
     fn max_for_axis(&self, dim: usize) -> P;
 
     /// Expand the rectangle to minimally fit the shape
-    fn expand_rect_to_fit(&self, edges: &mut Rect<P, D>);
+    fn expand_rect_to_fit(&self, edges: &mut Rect<P, DIM>);
 
     /// Determine the distance from the rectangle's center
-    fn distance_from_rect_center(&self, edges: &Rect<P, D>) -> P;
+    fn distance_from_rect_center(&self, edges: &Rect<P, DIM>) -> P;
 
     /// Determine if the shape is completely contained in the rectangle
-    fn contained_by_rect(&self, edges: &Rect<P, D>) -> bool;
+    fn contained_by_rect(&self, edges: &Rect<P, DIM>) -> bool;
 
     /// Determine if the shape overlaps the rectangle
-    fn overlapped_by_rect(&self, edges: &Rect<P, D>) -> bool;
+    fn overlapped_by_rect(&self, edges: &Rect<P, DIM>) -> bool;
 
     /// Determines the area shared with the rectangle
     /// In cases where the shape and rect overlap, but the shape has no area (point or a line, for example), return 0
-    fn area_overlapped_with_rect(&self, edges: &Rect<P, D>) -> P;
+    fn area_overlapped_with_rect(&self, edges: &Rect<P, DIM>) -> P;
 }
 
-impl<P, D> Shape<P, D> for Point<P, D>
-    where P: Float
-    + Signed
-    + Bounded
-    + MulAssign
-    + AddAssign
-    + ToPrimitive
-    + FromPrimitive
-    + Copy
-    + Debug,
-    D: ArrayLength<P> + ArrayLength<(P,P)>
+impl<P, DIM> Shape<P, DIM> for Point<P, DIM>
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
+    DIM: ArrayLength<P> + ArrayLength<(P,P)>
 {
     fn dim(&self) -> usize {
         self.coords.len()
@@ -284,14 +271,14 @@ impl<P, D> Shape<P, D> for Point<P, D>
         *self.coords.get(dim).unwrap()
     }
 
-    fn expand_rect_to_fit(&self, edges: &mut Rect<P, D>) {
+    fn expand_rect_to_fit(&self, edges: &mut Rect<P, DIM>) {
         for (&mut(ref mut x, ref mut y), &z) in izip!(edges.deref_mut(), self.deref()){
             *x = x.min(z);
             *y = y.max(z);
         }
     }
 
-    fn distance_from_rect_center(&self, edges: &Rect<P, D>) -> P {
+    fn distance_from_rect_center(&self, edges: &Rect<P, DIM>) -> P {
         let two = FromPrimitive::from_usize(2).unwrap();
         let dist: P = izip!(edges.deref(), self.deref())
             .fold(Zero::zero(),
@@ -299,11 +286,11 @@ impl<P, D> Shape<P, D> for Point<P, D>
         dist.sqrt()
     }
 
-    fn contained_by_rect(&self, edges: &Rect<P, D>) -> bool {
+    fn contained_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
         self.overlapped_by_rect(edges)
     }
 
-    fn overlapped_by_rect(&self, edges: &Rect<P, D>) -> bool {
+    fn overlapped_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
         for (&(x, y), &z) in izip!(edges.deref(), self.deref()){
             if z < x ||  y < z {
                 return false;
@@ -313,22 +300,14 @@ impl<P, D> Shape<P, D> for Point<P, D>
     }
 
     #[allow(unused_variables)]
-    fn area_overlapped_with_rect(&self, edges: &Rect<P, D>) -> P {
+    fn area_overlapped_with_rect(&self, edges: &Rect<P, DIM>) -> P {
         Zero::zero()
     }
 }
 
-impl<P, D> Shape<P, D> for LineSegment<P, D>
-    where P: Float
-    + Signed
-    + Bounded
-    + MulAssign
-    + AddAssign
-    + ToPrimitive
-    + FromPrimitive
-    + Copy
-    + Debug,
-    D: ArrayLength<P> + ArrayLength<(P,P)>
+impl<P, DIM> Shape<P, DIM> for LineSegment<P, DIM>
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
+    DIM: ArrayLength<P> + ArrayLength<(P,P)>
 {
 
     fn dim(&self) -> usize {
@@ -346,12 +325,12 @@ impl<P, D> Shape<P, D> for LineSegment<P, D>
         self.x.coords.get(dim).unwrap().max(*self.y.coords.get(dim).unwrap())
     }
 
-    fn expand_rect_to_fit(&self, edges: &mut Rect<P, D>) {
+    fn expand_rect_to_fit(&self, edges: &mut Rect<P, DIM>) {
         self.x.expand_rect_to_fit(edges);
         self.y.expand_rect_to_fit(edges);
     }
 
-    fn distance_from_rect_center(&self, edges: &Rect<P, D>) -> P {
+    fn distance_from_rect_center(&self, edges: &Rect<P, DIM>) -> P {
         let two = FromPrimitive::from_usize(2).unwrap();
         let dist: P = izip!(edges.deref(), self.x.deref(), self.y.deref())
             .fold(Zero::zero(),
@@ -359,25 +338,23 @@ impl<P, D> Shape<P, D> for LineSegment<P, D>
         dist.sqrt()
     }
 
-    fn contained_by_rect(&self, edges: &Rect<P, D>) -> bool {
+    fn contained_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
         self.x.contained_by_rect(edges) && self.y.contained_by_rect(edges)
     }
 
-    fn overlapped_by_rect(&self, edges: &Rect<P, D>) -> bool {
+    fn overlapped_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
         self.x.overlapped_by_rect(edges) || self.y.overlapped_by_rect(edges)
     }
 
     #[allow(unused_variables)]
-    fn area_overlapped_with_rect(&self, edges: &Rect<P, D>) -> P {
+    fn area_overlapped_with_rect(&self, edges: &Rect<P, DIM>) -> P {
         Zero::zero()
     }
 }
 
-
-// Shape for Float capable
-impl<P, D> Shape<P, D> for Rect<P, D>
+impl<P, DIM> Shape<P, DIM> for Rect<P, DIM>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
-          D: ArrayLength<P> + ArrayLength<(P,P)>
+          DIM: ArrayLength<P> + ArrayLength<(P,P)>
 {
 
     fn dim(&self) -> usize {
@@ -398,14 +375,14 @@ impl<P, D> Shape<P, D> for Rect<P, D>
         self.edges.get(dim).unwrap().1
     }
 
-    fn expand_rect_to_fit(&self, edges: &mut Rect<P, D>) {
+    fn expand_rect_to_fit(&self, edges: &mut Rect<P, DIM>) {
         for (&mut (ref mut x1, ref mut y1), &(x2, y2)) in izip!(edges.deref_mut(), self.deref()) {
             *x1 = x1.min(x2);
             *y1 = y1.max(y2);
         }
     }
 
-    fn distance_from_rect_center(&self, edges: &Rect<P, D>) -> P {
+    fn distance_from_rect_center(&self, edges: &Rect<P, DIM>) -> P {
         let two = FromPrimitive::from_usize(2).unwrap();
         let dist: P = izip!(edges.deref(), self.deref())
             .fold(Zero::zero(), |distance, (&(x1, y1), &(x2, y2))| {
@@ -414,7 +391,7 @@ impl<P, D> Shape<P, D> for Rect<P, D>
         dist.sqrt()
     }
 
-    fn contained_by_rect(&self, edges: &Rect<P, D>) -> bool {
+    fn contained_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
         for (&(x1, y1), &(x2, y2)) in izip!(edges.deref(), self.deref()) {
             if x2 < x1 || y1 < y2 {
                 return false;
@@ -423,7 +400,7 @@ impl<P, D> Shape<P, D> for Rect<P, D>
         true
     }
 
-    fn overlapped_by_rect(&self, edges: &Rect<P, D>) -> bool {
+    fn overlapped_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
         for (&(x1, y1), &(x2, y2)) in izip!(edges.deref(), self.deref()) {
             if !(x1 < y2) || !(x2 < y1) {
                 return false;
@@ -432,7 +409,7 @@ impl<P, D> Shape<P, D> for Rect<P, D>
         true
     }
 
-    fn area_overlapped_with_rect(&self, edges: &Rect<P, D>) -> P {
+    fn area_overlapped_with_rect(&self, edges: &Rect<P, DIM>) -> P {
         izip!(edges.deref(), self.deref()).fold(One::one(), |area, (&(x1, y1), &(x2, y2))| {
             area * (y1.min(y2) - x1.max(x2)).max(Zero::zero())
         })
@@ -440,18 +417,9 @@ impl<P, D> Shape<P, D> for Rect<P, D>
 
 }
 
-impl<P, D> Shape<P, D> for Shapes<P, D>
-where P: Float
-    + Signed
-    + Bounded
-    + MulAssign
-    + AddAssign
-    + ToPrimitive
-    + FromPrimitive
-    + Copy
-    + Debug
-    + Default,
-    D: ArrayLength<P> + ArrayLength<(P,P)>
+impl<P, DIM> Shape<P, DIM> for Shapes<P, DIM>
+where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
+    DIM: ArrayLength<P> + ArrayLength<(P,P)>
 {
 
     fn dim(&self) -> usize {
@@ -486,7 +454,7 @@ where P: Float
         }
     }
 
-    fn expand_rect_to_fit(&self, edges: &mut Rect<P, D>) {
+    fn expand_rect_to_fit(&self, edges: &mut Rect<P, DIM>) {
         match self {
             &Shapes::Point(ref point) => point.expand_rect_to_fit(edges),
             &Shapes::LineSegment(ref linesegment) => linesegment.expand_rect_to_fit(edges),
@@ -494,7 +462,7 @@ where P: Float
         }
     }
 
-    fn distance_from_rect_center(&self, edges: &Rect<P, D>) -> P {
+    fn distance_from_rect_center(&self, edges: &Rect<P, DIM>) -> P {
         match self {
             &Shapes::Point(ref point) => point.distance_from_rect_center(edges),
             &Shapes::LineSegment(ref linesegment) => linesegment.distance_from_rect_center(edges),
@@ -502,7 +470,7 @@ where P: Float
         }
     }
 
-    fn contained_by_rect(&self, edges: &Rect<P, D>) -> bool {
+    fn contained_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
         match self {
             &Shapes::Point(ref point) => point.contained_by_rect(edges),
             &Shapes::LineSegment(ref linesegment) => linesegment.contained_by_rect(edges),
@@ -510,7 +478,7 @@ where P: Float
         }
     }
 
-    fn overlapped_by_rect(&self, edges: &Rect<P, D>) -> bool {
+    fn overlapped_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
         match self {
             &Shapes::Point(ref point) => point.overlapped_by_rect(edges),
             &Shapes::LineSegment(ref linesegment) => linesegment.overlapped_by_rect(edges),
@@ -518,7 +486,7 @@ where P: Float
         }
     }
 
-    fn area_overlapped_with_rect(&self, edges: &Rect<P, D>) -> P {
+    fn area_overlapped_with_rect(&self, edges: &Rect<P, DIM>) -> P {
         match self {
             &Shapes::Point(ref point) => point.area_overlapped_with_rect(edges),
             &Shapes::LineSegment(ref linesegment) => linesegment.area_overlapped_with_rect(edges),
@@ -549,17 +517,6 @@ mod tests {
         for i in point.deref() {
             assert_relative_eq!(0.0f64, i);
         }
-
-        // TODO: This breaks MIR:
-        //
-        // <generic_array macros>:5:1: 5:20 warning: broken MIR (Terminator { span: <generic_array macros>:4:31: 5:22, scope: ScopeId(7), kind: var0 = <generic_array::GenericArray<T, N>><u32, <<<typenum::UTerm as generic_array::arr::AddLength<u32, typenum::UInt<typenum::UTerm, typenum::B1>>>::Output as generic_array::arr::AddLength<u32, typenum::UInt<typenum::UTerm, typenum::B1>>>::Output as generic_array::arr::AddLength<u32, typenum::UInt<typenum::UTerm, typenum::B1>>>::Output>::from_slice(tmp0) -> bb1 }): call dest mismatch (generic_array::GenericArray<u32, typenum::UInt<typenum::UInt<typenum::UTerm, typenum::B1>, typenum::B1>> <- generic_array::GenericArray<u32, <<<typenum::UTerm as generic_array::arr::AddLength<u32, typenum::UInt<typenum::UTerm, typenum::B1>>>::Output as generic_array::arr::AddLength<u32, typenum::UInt<typenum::UTerm, typenum::B1>>>::Output as generic_array::arr::AddLength<u32, typenum::UInt<typenum::UTerm, typenum::B1>>>::Output>): Sorts(ExpectedFound { expected: typenum::UInt<typenum::UInt<typenum::UTerm, typenum::B1>, typenum::B1>, found: <<<typenum::UTerm as generic_array::arr::AddLength<u32, typenum::UInt<typenum::UTerm, typenum::B1>>>::Output as generic_array::arr::AddLength<u32, typenum::UInt<typenum::UTerm, typenum::B1>>>::Output as generic_array::arr::AddLength<u32, typenum::UInt<typenum::UTerm, typenum::B1>>>::Output })
-        // <generic_array macros>:5 & [ $ ( $ x ) , * ] ) } ) ; ( $ T : ty ; $ N : ty , [  ] , [ $ x1 : expr ] )
-        // ^~~~~~~~~~~~~~~~~~~
-        // <generic_array macros>:10:1: 10:73 note: in this expansion of arr_impl! (defined in <generic_array macros>)
-        // <generic_array macros>:13:1: 14:73 note: in this expansion of arr_impl! (defined in <generic_array macros>)
-        // <generic_array macros>:8:1: 8:70 note: in this expansion of arr_impl! (defined in <generic_array macros>)
-        // <generic_array macros>:2:1: 2:51 note: in this expansion of arr_impl! (defined in <generic_array macros>)
-        //
 
         let zero: Shapes<f64, U3> = Shapes::Point(Point::from_slice(&ZERO));
         let one: Shapes<f64, U3> = Shapes::Point(Point::from_slice(&ONE));

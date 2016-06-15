@@ -16,51 +16,42 @@ use index::{IndexInsert, IndexRemove};
 use tree::{LevelNode, Query, Leaf};
 use std::marker::PhantomData;
 
-pub struct RRemove<P, D, S, MIN, MAX, T>
-    where D: ArrayLength<P> + ArrayLength<(P, P)>,
+pub struct RRemove<P, DIM, SHAPE, MIN, MAX, T>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
           MIN: Unsigned,
           MAX: Unsigned
 {
-    _phantom_p: PhantomData<P>,
-    _phantom_d: PhantomData<D>,
-    _phantom_s: PhantomData<S>,
-    _phantom_min: PhantomData<MIN>,
-    _phantom_max: PhantomData<MAX>,
-    _phantom_t: PhantomData<T>,
+    _p: PhantomData<P>,
+    _dim: PhantomData<DIM>,
+    _shape: PhantomData<SHAPE>,
+    _min: PhantomData<MIN>,
+    _max: PhantomData<MAX>,
+    _t: PhantomData<T>,
 }
 
-impl<P, D, S, MIN, MAX, T> RRemove<P, D, S, MIN, MAX, T>
-    where P: Float
-        + Signed
-        + Bounded
-        + MulAssign
-        + AddAssign
-        + ToPrimitive
-        + FromPrimitive
-        + Copy
-        + Debug
-        + Default,
-        D: ArrayLength<P> + ArrayLength<(P, P)>,
-        S: Shape<P, D>,
+impl<P, DIM, SHAPE, MIN, MAX, T> RRemove<P, DIM, SHAPE, MIN, MAX, T>
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
+        DIM: ArrayLength<P> + ArrayLength<(P, P)>,
+        SHAPE: Shape<P, DIM>,
         MIN: Unsigned,
         MAX: Unsigned
 {
-    pub fn new() -> RRemove<P, D, S, MIN, MAX, T> {
+    pub fn new() -> RRemove<P, DIM, SHAPE, MIN, MAX, T> {
         RRemove{
-            _phantom_d: PhantomData,
-            _phantom_p: PhantomData,
-            _phantom_s: PhantomData,
-            _phantom_min: PhantomData,
-            _phantom_max: PhantomData,
-            _phantom_t: PhantomData
+            _dim: PhantomData,
+            _p: PhantomData,
+            _shape: PhantomData,
+            _min: PhantomData,
+            _max: PhantomData,
+            _t: PhantomData
         }
     }
 
 // Removes matching leaves from a leaf level
 // Returns if parent node should retain this
-    fn remove_matching_leaves<F: FnMut(&T) -> bool>(&self, query: &Query<P, D, S, T>, mbr: &mut Rect<P, D>, children: &mut Vec<Leaf<P, D, S, T>>,
-        removed: &mut Vec<Leaf<P, D, S, T>>,
-        to_reinsert: &mut Vec<Leaf<P, D, S, T>>,
+    fn remove_matching_leaves<F: FnMut(&T) -> bool>(&self, query: &Query<P, DIM, SHAPE, T>, mbr: &mut Rect<P, DIM>, children: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
+        removed: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
+        to_reinsert: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
         f: &mut F) -> bool {
 
         let orig_len = children.len();
@@ -80,7 +71,7 @@ impl<P, D, S, MIN, MAX, T> RRemove<P, D, S, MIN, MAX, T>
     }
 
 // Consume all child leaves and queue them for reinsert
-    fn consume_leaves_for_reinsert(&self, children: &mut Vec<LevelNode<P, D, S, T>>, to_reinsert: &mut Vec<Leaf<P, D, S, T>>) {
+    fn consume_leaves_for_reinsert(&self, children: &mut Vec<LevelNode<P, DIM, SHAPE, T>>, to_reinsert: &mut Vec<Leaf<P, DIM, SHAPE, T>>) {
         for ref mut child in children {
             match *child {
                 &mut LevelNode::Leaves{ref mut children, ..} => to_reinsert.append(children),
@@ -89,9 +80,9 @@ impl<P, D, S, MIN, MAX, T> RRemove<P, D, S, MIN, MAX, T>
         }
     }
 
-    fn remove_leaves_from_level<F: FnMut(&T) -> bool>(&self, query: &Query<P, D, S, T>, level: &mut LevelNode<P, D, S, T>,
-        removed: &mut Vec<Leaf<P, D, S, T>>,
-        to_reinsert: &mut Vec<Leaf<P, D, S, T>>,
+    fn remove_leaves_from_level<F: FnMut(&T) -> bool>(&self, query: &Query<P, DIM, SHAPE, T>, level: &mut LevelNode<P, DIM, SHAPE, T>,
+        removed: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
+        to_reinsert: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
         f: &mut F) -> bool {
             if !query.accept_level(level) {
                 return true;
@@ -119,22 +110,22 @@ impl<P, D, S, MIN, MAX, T> RRemove<P, D, S, MIN, MAX, T>
 }
 
 
-impl<P, D, S, MIN, MAX, T, I> IndexRemove<P, D, S, T, I> for RRemove<P, D, S, MIN, MAX, T>
+impl<P, DIM, SHAPE, MIN, MAX, T, I> IndexRemove<P, DIM, SHAPE, T, I> for RRemove<P, DIM, SHAPE, MIN, MAX, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
-        D: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
-        S: Shape<P, D>,
-        I: IndexInsert<P, D, S, T>,
+        DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
+        SHAPE: Shape<P, DIM>,
+        I: IndexInsert<P, DIM, SHAPE, T>,
         MIN: Unsigned,
         MAX: Unsigned
 {
     fn remove_from_root<F: FnMut(&T) -> bool>(&self,
-        root: Option<LevelNode<P, D, S, T>>,
+        root: Option<LevelNode<P, DIM, SHAPE, T>>,
         insert_index: &I,
-        query: Query<P, D, S, T>,
-        mut f: F) -> (Option<LevelNode<P, D, S, T>>, Vec<Leaf<P, D, S, T>>) {
+        query: Query<P, DIM, SHAPE, T>,
+        mut f: F) -> (Option<LevelNode<P, DIM, SHAPE, T>>, Vec<Leaf<P, DIM, SHAPE, T>>) {
 
             if root.is_none() {
-                return (None, Vec::with_capacity(0));
+                (None, Vec::with_capacity(0))
             } else {
                 let mut root_node = root.unwrap();
                 let mut to_reinsert = Vec::new();
@@ -147,7 +138,7 @@ impl<P, D, S, MIN, MAX, T, I> IndexRemove<P, D, S, T, I> for RRemove<P, D, S, MI
                 for leaf in to_reinsert {
                     root_node = insert_index.insert_into_root(Some(root_node), leaf).unwrap();
                 }
-                return (Some(root_node), removed);
+                (Some(root_node), removed)
             }
         }
 }
