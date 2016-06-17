@@ -15,9 +15,9 @@ pub trait IndexInsert<P, DIM, SHAPE, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     fn insert_into_root(&self,
-                        root: Option<LevelNode<P, DIM, SHAPE, T>>,
+                        mut root: LevelNode<P, DIM, SHAPE, T>,
                         leaf: Leaf<P, DIM, SHAPE, T>)
-                        -> Option<LevelNode<P, DIM, SHAPE, T>>;
+                        -> LevelNode<P, DIM, SHAPE, T>;
 }
 
 /// Remove entries from the tree that match the query, but not the retain function f.
@@ -27,9 +27,9 @@ pub trait IndexRemove<P, DIM, SHAPE, T, I>
 {
     fn remove_from_root<F: FnMut(&T) -> bool>
         (&self,
-         root: Option<LevelNode<P, DIM, SHAPE, T>>,
+         mut root: LevelNode<P, DIM, SHAPE, T>,
          insert_index: &I,
          query: Query<P, DIM, SHAPE, T>,
          mut f: F)
-         -> (Option<LevelNode<P, DIM, SHAPE, T>>, Vec<Leaf<P, DIM, SHAPE, T>>);
+         -> (LevelNode<P, DIM, SHAPE, T>, Vec<Leaf<P, DIM, SHAPE, T>>);
 }

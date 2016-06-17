@@ -15,6 +15,7 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 use index::{IndexInsert, IndexRemove};
 use std::ops::Deref;
+use std::mem;
 
 /// A tree leaf
 #[derive(Debug)]
@@ -101,9 +102,17 @@ pub enum LevelNode<P, DIM, SHAPE, T>
 }
 
 impl<P, DIM, SHAPE, T> LevelNode<P, DIM, SHAPE, T>
-    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
           SHAPE: Shape<P, DIM> {
+
+    pub fn new_leaves() -> LevelNode<P, DIM, SHAPE, T> {
+        LevelNode::Leaves{mbr: Rect::max_inverted(), children: Vec::new()}
+    }
+
+    fn new_no_alloc() -> LevelNode<P, DIM, SHAPE, T> {
+        LevelNode::Leaves{mbr: Rect::max_inverted(), children: Vec::with_capacity(0)}
+    }
 
     /// Does the level point to leaves?
     pub fn has_leaves(&self) -> bool {
@@ -126,7 +135,7 @@ impl<P, DIM, SHAPE, T> LevelNode<P, DIM, SHAPE, T>
         }
     }
 
-    /// Mutably borrow the level's minimum bounding rectangle 
+    /// Mutably borrow the level's minimum bounding rectangle
     pub fn mbr_mut(&mut self) -> &mut Rect<P, DIM> {
         match *self {
             LevelNode::Level{ref mut mbr, ..} => mbr,
@@ -139,6 +148,14 @@ impl<P, DIM, SHAPE, T> LevelNode<P, DIM, SHAPE, T>
         match *self {
             LevelNode::Level{ref children, ..} => children.len(),
             LevelNode::Leaves{ref children, ..} => children.len(),
+        }
+    }
+
+    /// Does the level have children?
+    pub fn is_empty(&self) -> bool {
+        match *self {
+            LevelNode::Level{ref children, ..} => children.is_empty(),
+            LevelNode::Leaves{ref children, ..} => children.is_empty(),
         }
     }
 }
@@ -202,7 +219,7 @@ impl<P, DIM, SHAPE, T> Query<P, DIM, SHAPE, T>
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
           SHAPE: Shape<P, DIM> {
 
-    /// Convenience method for a new Query::Contains 
+    /// Convenience method for a new Query::Contains
     pub fn contains(query: Rect<P, DIM>) -> Query<P, DIM, SHAPE, T>{
         Query::Contains(query, PhantomData, PhantomData)
     }
@@ -212,8 +229,8 @@ impl<P, DIM, SHAPE, T> Query<P, DIM, SHAPE, T>
         Query::Overlaps(query, PhantomData, PhantomData)
     }
 
-    //TODO: Would this be better as a trait? That way the library user could create their own queries
-    /// Does this query accept the given leaf?
+    // TODO: Would this be better as a trait? That way the library user could create their own queries
+    // Does this query accept the given leaf?
     pub fn accept_leaf(&self, leaf: &Leaf<P, DIM, SHAPE, T>) -> bool {
         match self {
             &Query::Contains(ref query, _, _) => leaf.shape.contained_by_rect(query),
@@ -221,8 +238,8 @@ impl<P, DIM, SHAPE, T> Query<P, DIM, SHAPE, T>
         }
     }
 
-    //TODO: Would this be better as a trait? That way the library user could create their own queries
-    /// Does this query accept the given level?
+    // TODO: Would this be better as a trait? That way the library user could create their own queries
+    // Does this query accept the given level?
     pub fn accept_level(&self, level: &LevelNode<P, DIM, SHAPE, T>) -> bool {
         match self {
             &Query::Contains(ref query, _, _) => level.mbr().overlapped_by_rect(query),
@@ -239,7 +256,7 @@ pub struct SpatialMap<P, DIM, SHAPE, I, R, T>
 {
     insert_index: I,
     remove_index: R,
-    root: Option<LevelNode<P, DIM, SHAPE, T>>,
+    root: LevelNode<P, DIM, SHAPE, T>,
     len: usize,
 }
 
@@ -251,14 +268,14 @@ impl<P, DIM, SHAPE, I, R, T> SpatialMap<P, DIM, SHAPE, I, R, T>
           R: IndexRemove<P, DIM, SHAPE, T, I>,
 {
 
-    // Create a new SpatialMap with the given insert and remove indexes
+    /// Create a new SpatialMap with the given insert and remove indexes
     pub fn new(insert_index: I, remove_index: R) -> SpatialMap<P, DIM, SHAPE, I, R, T> {
-        SpatialMap{insert_index: insert_index, remove_index: remove_index, root: None, len: 0}
+        SpatialMap{insert_index: insert_index, remove_index: remove_index, root: LevelNode::new_leaves(), len: 0}
     }
 
     /// Insert an item
     pub fn insert(&mut self, shape: SHAPE, item: T) {
-        self.root = self.insert_index.insert_into_root(self.root.take(), Leaf::new(shape, item));
+        self.root = self.insert_index.insert_into_root(mem::replace(&mut self.root, LevelNode::new_no_alloc()), Leaf::new(shape, item));
         self.len += 1;
     }
 
@@ -270,7 +287,7 @@ impl<P, DIM, SHAPE, I, R, T> SpatialMap<P, DIM, SHAPE, I, R, T>
     /// Remove all items whose shapes are accepted by the query and where f(&item) returns false
     pub fn retain<F: FnMut(&T) -> bool>(&mut self, query: Query<P, DIM, SHAPE, T>, f: F) -> Vec<(SHAPE, T)> {
         let (new_root, mut removed) =
-            self.remove_index.remove_from_root(self.root.take(), &self.insert_index, query, f);
+            self.remove_index.remove_from_root(mem::replace(&mut self.root, LevelNode::new_no_alloc()), &self.insert_index, query, f);
         self.len -= removed.len();
         self.root = new_root;
         let mut removed_extract = Vec::with_capacity(removed.len());
@@ -280,7 +297,7 @@ impl<P, DIM, SHAPE, I, R, T> SpatialMap<P, DIM, SHAPE, I, R, T>
         removed_extract
     }
 
-    /// Whether the map is empty or not
+    /// Whether the map is empty
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
@@ -292,28 +309,28 @@ impl<P, DIM, SHAPE, I, R, T> SpatialMap<P, DIM, SHAPE, I, R, T>
 
     /// Clear the map
     pub fn clear(&mut self) {
-        self.root = None;
+        self.root = LevelNode::new_leaves();
         self.len = 0;
     }
 
     /// Iter for the map
     pub fn iter(&self) -> Iter<P, DIM, SHAPE, T> {
-        Iter::new(Query::overlaps(Rect::max()), self.root.as_ref())
+        Iter::new(Query::overlaps(Rect::max()), &self.root)
     }
 
     /// IterMut for the map
     pub fn iter_mut(&mut self) -> IterMut<P, DIM, SHAPE, T> {
-        IterMut::new(Query::overlaps(Rect::max()), self.root.as_mut())
+        IterMut::new(Query::overlaps(Rect::max()), &mut self.root)
     }
 
     /// Iter for the map with a given query
     pub fn iter_query(&self, query: Query<P, DIM, SHAPE, T>) -> Iter<P, DIM, SHAPE, T> {
-        Iter::new(query, self.root.as_ref())
+        Iter::new(query, &self.root)
     }
 
     /// IterMut for the map with a given query
     pub fn iter_query_mut(&mut self, query: Query<P, DIM, SHAPE, T>) -> IterMut<P, DIM, SHAPE, T> {
-        IterMut::new(query, self.root.as_mut())
+        IterMut::new(query, &mut self.root)
     }
 }
 
@@ -336,7 +353,7 @@ impl<'tree, P, DIM, SHAPE, T> Iter<'tree, P, DIM, SHAPE, T>
           SHAPE: Shape<P, DIM> + 'tree,
           T: 'tree
 {
-    fn new(query: Query<P, DIM, SHAPE, T>, root: Option<&'tree LevelNode<P, DIM, SHAPE, T>>) -> Iter<'tree, P, DIM, SHAPE, T> {
+    fn new(query: Query<P, DIM, SHAPE, T>, root: &'tree LevelNode<P, DIM, SHAPE, T>) -> Iter<'tree, P, DIM, SHAPE, T> {
         let rc_query = Rc::new(query);
         let level_iter = LevelIter::new(rc_query.clone(), root);
         Iter{query: rc_query, level_iter: level_iter, leaf_iter: None, finished: false}
@@ -396,11 +413,10 @@ struct LevelIter<'tree, P, DIM, SHAPE, T>
           T: 'tree
 {
     query: Rc<Query<P, DIM, SHAPE, T>>,
-    root: Option<&'tree LevelNode<P, DIM, SHAPE, T>>,
+    root: &'tree LevelNode<P, DIM, SHAPE, T>,
     level_stack: Vec<SliceIter<'tree, LevelNode<P, DIM, SHAPE, T>>>,
     finished: bool,
 }
-
 
 impl<'tree, P, DIM, SHAPE, T> LevelIter<'tree, P, DIM, SHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
@@ -408,9 +424,9 @@ impl<'tree, P, DIM, SHAPE, T> LevelIter<'tree, P, DIM, SHAPE, T>
           SHAPE: Shape<P, DIM> + 'tree,
           T: 'tree {
 
-    fn new(query: Rc<Query<P, DIM, SHAPE, T>>, root: Option<&'tree LevelNode<P, DIM, SHAPE, T>>) -> LevelIter<'tree, P, DIM, SHAPE, T> {
-        if root.is_none() || !query.accept_level(root.as_ref().unwrap()) {
-            return LevelIter{query: query, root: None, level_stack: Vec::with_capacity(0), finished: true};
+    fn new(query: Rc<Query<P, DIM, SHAPE, T>>, root: &'tree LevelNode<P, DIM, SHAPE, T>) -> LevelIter<'tree, P, DIM, SHAPE, T> {
+        if root.is_empty() || !query.accept_level(root) {
+            return LevelIter{query: query, root: root, level_stack: Vec::with_capacity(0), finished: true};
         }
         LevelIter{query: query, root: root, level_stack: Vec::new(), finished: false}
     }
@@ -452,7 +468,7 @@ impl<'tree, P, DIM, SHAPE, T> Iterator for LevelIter<'tree, P, DIM, SHAPE, T>
             return None;
         }
         if self.level_stack.is_empty() {
-            match *self.root.as_ref().unwrap() {
+            match self.root {
                 &LevelNode::Leaves{ref children, ..} => {
                     self.finished = true;
                     return Some(children.iter());
@@ -496,7 +512,7 @@ impl<'tree, P, DIM, SHAPE, T> IterMut<'tree, P, DIM, SHAPE, T>
           SHAPE: Shape<P, DIM> + 'tree,
           T: 'tree
 {
-    fn new(query: Query<P, DIM, SHAPE, T>, root: Option<&'tree mut LevelNode<P, DIM, SHAPE, T>>) -> IterMut<'tree, P, DIM, SHAPE, T> {
+    fn new(query: Query<P, DIM, SHAPE, T>, root: &'tree mut LevelNode<P, DIM, SHAPE, T>) -> IterMut<'tree, P, DIM, SHAPE, T> {
         let rc_query = Rc::new(query);
         let level_iter = LevelIterMut::new(rc_query.clone(), root);
         IterMut{query: rc_query, level_iter: level_iter, leaf_iter: None, finished: false}
@@ -561,7 +577,7 @@ struct LevelIterMut<'tree, P, DIM, SHAPE, T>
           T: 'tree
 {
     query: Rc<Query<P, DIM, SHAPE, T>>,
-    root: Option<&'tree mut LevelNode<P, DIM, SHAPE, T>>,
+    root: &'tree mut LevelNode<P, DIM, SHAPE, T>,
     level_stack: Vec<SliceIterMut<'tree, LevelNode<P, DIM, SHAPE, T>>>,
     finished: bool,
 }
@@ -572,18 +588,18 @@ impl<'tree, P, DIM, SHAPE, T> LevelIterMut<'tree, P, DIM, SHAPE, T>
           SHAPE: Shape<P, DIM> + 'tree,
           T: 'tree {
 
-    fn new(query: Rc<Query<P, DIM, SHAPE, T>>, root: Option<&'tree mut LevelNode<P, DIM, SHAPE, T>>) -> LevelIterMut<'tree, P, DIM, SHAPE, T> {
-        if root.is_none() || !query.accept_level(root.as_ref().unwrap()) {
-            return LevelIterMut{query: query, root: None, level_stack: Vec::with_capacity(0), finished: true};
+    fn new(query: Rc<Query<P, DIM, SHAPE, T>>, root: &'tree mut LevelNode<P, DIM, SHAPE, T>) -> LevelIterMut<'tree, P, DIM, SHAPE, T> {
+        if root.is_empty() || !query.accept_level(root) {
+            return LevelIterMut{query: query, root: root, level_stack: Vec::with_capacity(0), finished: true};
         }
         LevelIterMut{query: query, root: root, level_stack: Vec::new(), finished: false}
     }
 
-// access the root node. Must be unsafe because &'a mut self and &'tree mut self.root borrows cause a conflict
-// We're not modifying the tree structure, just the leaf nodes, so this should be ok
+    // access the root node. Must be unsafe because &'a mut self and &'tree mut self.root borrows cause a conflict
+    // We're not modifying the tree structure, just the leaf nodes, so this should be ok
     unsafe fn get_root_node(&mut self) -> &'tree mut LevelNode<P, DIM, SHAPE, T> {
-        let root: *mut Option<&'tree mut LevelNode<P, DIM, SHAPE, T>> = &mut self.root;
-        *(*root).as_mut().unwrap()
+        let root: *mut LevelNode<P, DIM, SHAPE, T> = self.root;
+        &mut *root
     }
 
 fn next_leaves(&mut self, mut m_iter: SliceIterMut<'tree, LevelNode<P, DIM, SHAPE, T>>) -> Option<SliceIterMut<'tree, Leaf<P, DIM, SHAPE, T>>> {

@@ -47,11 +47,11 @@ impl<P, DIM, SHAPE, T> RStar<P, DIM, SHAPE, T>
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
           SHAPE: Shape<P, DIM>
 {
-    pub fn new() -> SpatialMap<P, DIM, SHAPE, RStarInsert<P, DIM, SHAPE, U32, U64, T>, RRemove<P, DIM, SHAPE, U32, U64, T>, T> {
+    pub fn new() -> SpatialMap<P, DIM, SHAPE, RStarInsert<P, DIM, SHAPE, U32, U64, T>, RRemove<P, DIM, SHAPE, U32, T>, T> {
         SpatialMap::new(RStarInsert::new(), RRemove::new())
     }
 
-    pub fn new_with_limits<MIN: Unsigned, MAX: Unsigned>() -> SpatialMap<P, DIM, SHAPE, RStarInsert<P, DIM, SHAPE, MIN, MAX, T>, RRemove<P, DIM, SHAPE, MIN, MAX, T>, T> {
+    pub fn new_with_limits<MIN: Unsigned, MAX: Unsigned>() -> SpatialMap<P, DIM, SHAPE, RStarInsert<P, DIM, SHAPE, MIN, MAX, T>, RRemove<P, DIM, SHAPE, MIN, T>, T> {
         SpatialMap::new(RStarInsert::new(), RRemove::new())
     }
 }
