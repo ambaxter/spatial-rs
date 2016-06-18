@@ -54,7 +54,7 @@ impl<P, DIM, SHAPE, MIN, T> RRemove<P, DIM, SHAPE, MIN, T>
         at_root: bool) -> bool {
 
         let orig_len = children.len();
-        children.retain_and_append(removed, |leaf| !query.accept_leaf(leaf) && !f(&leaf.item));
+        children.retain_and_append(removed, |leaf| !query.accept_leaf(leaf) || f(&leaf.item));
         let children_removed = orig_len != children.len();
         if children.len() < MIN::to_usize() && !at_root {
             to_reinsert.append(children);

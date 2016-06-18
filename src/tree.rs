@@ -219,7 +219,7 @@ pub trait SpatialMapQuery<P, DIM, SHAPE, T>
 }
 
 /// Rect based query
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum RectQuery<P, DIM>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
@@ -259,7 +259,7 @@ pub struct SpatialMap<P, DIM, SHAPE, I, R, T>
 {
     insert_index: I,
     remove_index: R,
-    root: LevelNode<P, DIM, SHAPE, T>,
+    pub root: LevelNode<P, DIM, SHAPE, T>,
     len: usize,
 }
 

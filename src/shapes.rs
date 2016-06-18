@@ -130,10 +130,10 @@ impl<P, DIM> Rect<P, DIM>
 
 // TODO: I'm not sure if I like this
 // New Rect from corners
-    pub fn from_corners(x: &Point<P, DIM>, y: &Point<P, DIM>) -> Rect<P, DIM>{
+    pub fn from_corners(x: GenericArray<P, DIM>, y: GenericArray<P, DIM>) -> Rect<P, DIM>{
         let mut edges = Rect::max_inverted();
-        x.expand_rect_to_fit(&mut edges);
-        y.expand_rect_to_fit(&mut edges);
+        Point::new(x).expand_rect_to_fit(&mut edges);
+        Point::new(y).expand_rect_to_fit(&mut edges);
         edges
     }
 
@@ -607,21 +607,22 @@ mod tests {
 
     #[test]
     fn rect() {
-        let one: Point<f64, U3> = Point::from_slice(&ONE);
-        let zero: Point<f64, U3> = Point::from_slice(&ZERO);
-        let neg_one: Point<f64, U3> = Point::from_slice(&NEG_ONE);
-        let neg_two: Point<f64, U3> = Point::from_slice(&NEG_TWO);
+
+        let G_ONE: GenericArray<f64, U3> = arr![f64; 1.0f64, 1.0f64, 1.0f64];
+        let G_ZERO: GenericArray<f64, U3> = arr![f64; 0.0f64, 0.0f64, 0.0f64];
+        let G_NEG_ONE: GenericArray<f64, U3> = arr![f64; -1.0f64, -1.0f64, -1.0f64];
+        let G_NEG_TWO: GenericArray<f64, U3> = arr![f64; -2.0f64, -2.0f64, -2.0f64];
 
         // contained
-        let zero_one = Rect::from_corners(&zero, &one);
+        let zero_one = Rect::from_corners(G_ZERO.clone(), G_ONE.clone());
         // overlapped
-        let neg_one_one = Rect::from_corners(&neg_one, &one);
+        let neg_one_one = Rect::from_corners(G_NEG_ONE.clone(), G_ONE.clone());
         // outside
-        let neg_two_neg_one = Rect::from_corners(&neg_two, &neg_one);
+        let neg_two_neg_one = Rect::from_corners(G_NEG_TWO.clone(), G_NEG_ONE.clone());
 
         // Shape tests
         // dim
-        assert_eq!(one.dim(), zero_one.dim());
+        assert_eq!(zero_one.len(), zero_one.dim());
 
         // area
         assert_relative_eq!(1.0f64, zero_one.area());
@@ -659,8 +660,5 @@ mod tests {
         assert_relative_eq!(1.0f64, zero_one.area_overlapped_with_rect(&bounding_rect));
         assert_relative_eq!(1.0f64,
                             neg_one_one.area_overlapped_with_rect(&bounding_rect));
-
-        // margin
-        assert_relative_eq!(3.0f64, zero_one.margin());
     }
 }

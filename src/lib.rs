@@ -62,71 +62,33 @@ impl<P, DIM, SHAPE, T> RStar<P, DIM, SHAPE, T>
 #[cfg(test)]
 mod tests {
 
-    use typenum::consts::U3;
-    use generic_array::GenericArray;
+    use typenum::consts::{U3, U8};
+    use super::*;
     #[test]
-    fn it_works() {
-        // let mut tree: RStarTree<f64, String> = RStarTree::new(2);
-        // tree.insert(BoundingBox::new_from(&[(1.0f64, 1.0f64), (1.0f64, 1.0f64)]),
-        // "1".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(2.0f64, 2.0f64), (2.0f64, 2.0f64)]),
-        // "2".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(3.0f64, 3.0f64), (3.0f64, 3.0f64)]),
-        // "3".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(4.0f64, 4.0f64), (4.0f64, 4.0f64)]),
-        // "4".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(5.0f64, 25.0f64), (5.0f64, 25.0f64)]),
-        // "5".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(6.0f64, 25.0f64), (6.0f64, 25.0f64)]),
-        // "6".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(7.0f64, 25.0f64), (7.0f64, 25.0f64)]),
-        // "7".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(8.0f64, 25.0f64), (8.0f64, 25.0f64)]),
-        // "8".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(9.0f64, 25.0f64), (9.0f64, 25.0f64)]),
-        // "9".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(10.0f64, 25.0f64), (10.0f64, 25.0f64)]),
-        // "10".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(11.0f64, 25.0f64), (11.0f64, 25.0f64)]),
-        // "11".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(12.0f64, 25.0f64), (12.0f64, 25.0f64)]),
-        // "12".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(13.0f64, 25.0f64), (13.0f64, 25.0f64)]),
-        // "13".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(14.0f64, 25.0f64), (14.0f64, 25.0f64)]),
-        // "14".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(15.0f64, 25.0f64), (15.0f64, 25.0f64)]),
-        // "15".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(16.0f64, 25.0f64), (16.0f64, 25.0f64)]),
-        // "16".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(17.0f64, 25.0f64), (17.0f64, 25.0f64)]),
-        // "17".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(18.0f64, 25.0f64), (18.0f64, 25.0f64)]),
-        // "18".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(19.0f64, 25.0f64), (19.0f64, 25.0f64)]),
-        // "19".to_owned());
-        // tree.insert(BoundingBox::new_from(&[(20.0f64, 25.0f64), (20.0f64, 25.0f64)]),
-        // "20".to_owned());
-        //
-        // println!("Size: {}", tree.len());
-        //
-        // for node in tree.iter() {
-        // println!("All nodes: {:?}", node);
-        // }
-        //
-        // for node in tree.query(BoundingBox::new_from(&[(0.0f64, 10.1f64), (0.0f64, 10.1f64)])) {
-        // println!("10 box nodes: {:?}", node);
-        // }
-        //
-        // for node in tree.query_mut(BoundingBox::new_from(&[(0.0f64, 10.1f64), (0.0f64, 10.1f64)])) {
-        // node.1 = "newnew".to_owned();
-        // }
-        //
-        // for node in tree.query(BoundingBox::new_from(&[(0.0f64, 10.1f64), (0.0f64, 10.1f64)])) {
-        // println!("10 box nodes: {:?}", node);
-        // }
-        //
-        let test: GenericArray<u32, U3> = arr![u32; 1, 2, 3];
-        assert_eq!(test[1], 2);
+    fn rstar_integration() {
+        let mut tree_map = RStar::new_with_limits::<U3, U8>();
+        for i in 0..25 {
+            let i_f32 = i as f32;
+            tree_map.insert(Point::new(arr![f32; i_f32, i_f32, i_f32]), i);
+        }
+        for leaf in tree_map.iter() {
+            println!("All: {:?}, Item: {:?}", leaf.0, leaf.1)
+        }
+        assert_eq!(tree_map.len(), tree_map.iter().count());
+        let query = RectQuery::ContainedBy(Rect::from_corners(arr![f32; 0.0f32, 0.0f32, 0.0f32], arr![f32; 9.0f32, 9.0f32, 9.0f32]));
+        for leaf in tree_map.iter_query(query.clone()) {
+            println!("ToRemove: {:?}, Item: {:?}", leaf.0, leaf.1)
+        }
+        let removed = tree_map.remove(query.clone());
+        assert_eq!(10, removed.len());
+        assert_eq!(15, tree_map.len());
+        assert_eq!(tree_map.len(), tree_map.iter().count());
+        let removed_retain = tree_map.retain(RectQuery::ContainedBy(Rect::max()), |x| *x >= 20);
+        assert_eq!(10, removed_retain.len());
+        assert_eq!(tree_map.len(), tree_map.iter().count());
+        for leaf in tree_map.iter() {
+            println!("All: {:?}, Item: {:?}", leaf.0, leaf.1)
+        }
+        println!("Nodes: {:?}", tree_map.root)
     }
 }

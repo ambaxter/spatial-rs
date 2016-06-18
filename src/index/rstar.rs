@@ -328,3 +328,23 @@ impl<P, DIM, SHAPE, MIN, MAX, T> IndexInsert<P, DIM, SHAPE, T> for RStarInsert<P
         }
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use shapes::{Point, Rect};
+    use generic_array::GenericArray;
+    use typenum::consts::U3;
+
+    #[test]
+    fn margin() {
+        let G_ONE: GenericArray<f64, U3> = arr![f64; 1.0f64, 1.0f64, 1.0f64];
+        let G_ZERO: GenericArray<f64, U3> = arr![f64; 0.0f64, 0.0f64, 0.0f64];
+
+        // contained
+        let zero_one = Rect::from_corners(G_ZERO.clone(), G_ONE.clone());
+        // margin
+        assert_relative_eq!(3.0f64, zero_one.margin());
+    }
+}
