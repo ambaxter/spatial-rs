@@ -207,7 +207,7 @@ pub enum Shapes<P, DIM>
     Rect(Rect<P, DIM>), // Other(Box<Shape<P>>)
 }
 
-/// The minimum functionality required to insert a shape into an RTree
+/// The minimum functionality required to insert a shape into a `SpatialMap`
 /// Until the rust compiler allows compile-time generic integers, the generics here will be kinda painful
 /// The parameter 'edges' represents the expanse of the rectangle in that dimension
 /// A rectangle whose corners are at (x1, y1), (x2, y2) will have the corresponding edges: (x1, x2), (y1, y2)
@@ -416,74 +416,74 @@ where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPr
 {
 
     fn dim(&self) -> usize {
-        match self {
-            &Shapes::Point(ref point) => point.dim(),
-            &Shapes::LineSegment(ref linesegment) => linesegment.dim(),
-            &Shapes::Rect(ref rect) => rect.dim()
+        match *self {
+            Shapes::Point(ref point) => point.dim(),
+            Shapes::LineSegment(ref linesegment) => linesegment.dim(),
+            Shapes::Rect(ref rect) => rect.dim()
         }
     }
 
     fn area(&self) -> P {
-        match self {
-            &Shapes::Point(ref point) => point.area(),
-            &Shapes::LineSegment(ref linesegment) => linesegment.area(),
-            &Shapes::Rect(ref rect) => rect.area()
+        match *self {
+            Shapes::Point(ref point) => point.area(),
+            Shapes::LineSegment(ref linesegment) => linesegment.area(),
+            Shapes::Rect(ref rect) => rect.area()
         }
     }
 
     fn min_for_axis(&self, dim: usize) -> P {
-        match self {
-            &Shapes::Point(ref point) => point.min_for_axis(dim),
-            &Shapes::LineSegment(ref linesegment) => linesegment.min_for_axis(dim),
-            &Shapes::Rect(ref rect) => rect.min_for_axis(dim)
+        match *self {
+            Shapes::Point(ref point) => point.min_for_axis(dim),
+            Shapes::LineSegment(ref linesegment) => linesegment.min_for_axis(dim),
+            Shapes::Rect(ref rect) => rect.min_for_axis(dim)
         }
     }
 
     fn max_for_axis(&self, dim: usize) -> P {
-        match self {
-            &Shapes::Point(ref point) => point.max_for_axis(dim),
-            &Shapes::LineSegment(ref linesegment) => linesegment.max_for_axis(dim),
-            &Shapes::Rect(ref rect) => rect.max_for_axis(dim)
+        match *self {
+            Shapes::Point(ref point) => point.max_for_axis(dim),
+            Shapes::LineSegment(ref linesegment) => linesegment.max_for_axis(dim),
+            Shapes::Rect(ref rect) => rect.max_for_axis(dim)
         }
     }
 
     fn expand_rect_to_fit(&self, edges: &mut Rect<P, DIM>) {
-        match self {
-            &Shapes::Point(ref point) => point.expand_rect_to_fit(edges),
-            &Shapes::LineSegment(ref linesegment) => linesegment.expand_rect_to_fit(edges),
-            &Shapes::Rect(ref rect) => rect.expand_rect_to_fit(edges)
+        match *self {
+            Shapes::Point(ref point) => point.expand_rect_to_fit(edges),
+            Shapes::LineSegment(ref linesegment) => linesegment.expand_rect_to_fit(edges),
+            Shapes::Rect(ref rect) => rect.expand_rect_to_fit(edges)
         }
     }
 
     fn distance_from_rect_center(&self, edges: &Rect<P, DIM>) -> P {
-        match self {
-            &Shapes::Point(ref point) => point.distance_from_rect_center(edges),
-            &Shapes::LineSegment(ref linesegment) => linesegment.distance_from_rect_center(edges),
-            &Shapes::Rect(ref rect) => rect.distance_from_rect_center(edges)
+        match *self {
+            Shapes::Point(ref point) => point.distance_from_rect_center(edges),
+            Shapes::LineSegment(ref linesegment) => linesegment.distance_from_rect_center(edges),
+            Shapes::Rect(ref rect) => rect.distance_from_rect_center(edges)
         }
     }
 
     fn contained_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
-        match self {
-            &Shapes::Point(ref point) => point.contained_by_rect(edges),
-            &Shapes::LineSegment(ref linesegment) => linesegment.contained_by_rect(edges),
-            &Shapes::Rect(ref rect) => rect.contained_by_rect(edges)
+        match *self {
+            Shapes::Point(ref point) => point.contained_by_rect(edges),
+            Shapes::LineSegment(ref linesegment) => linesegment.contained_by_rect(edges),
+            Shapes::Rect(ref rect) => rect.contained_by_rect(edges)
         }
     }
 
     fn overlapped_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
-        match self {
-            &Shapes::Point(ref point) => point.overlapped_by_rect(edges),
-            &Shapes::LineSegment(ref linesegment) => linesegment.overlapped_by_rect(edges),
-            &Shapes::Rect(ref rect) => rect.overlapped_by_rect(edges)
+        match *self {
+            Shapes::Point(ref point) => point.overlapped_by_rect(edges),
+            Shapes::LineSegment(ref linesegment) => linesegment.overlapped_by_rect(edges),
+            Shapes::Rect(ref rect) => rect.overlapped_by_rect(edges)
         }
     }
 
     fn area_overlapped_with_rect(&self, edges: &Rect<P, DIM>) -> P {
-        match self {
-            &Shapes::Point(ref point) => point.area_overlapped_with_rect(edges),
-            &Shapes::LineSegment(ref linesegment) => linesegment.area_overlapped_with_rect(edges),
-            &Shapes::Rect(ref rect) => rect.area_overlapped_with_rect(edges)
+        match *self {
+            Shapes::Point(ref point) => point.area_overlapped_with_rect(edges),
+            Shapes::LineSegment(ref linesegment) => linesegment.area_overlapped_with_rect(edges),
+            Shapes::Rect(ref rect) => rect.area_overlapped_with_rect(edges)
         }
     }
 }

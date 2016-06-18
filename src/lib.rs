@@ -33,8 +33,9 @@ use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
 use std::fmt::Debug;
 use std::marker::PhantomData;
-pub use tree::{SpatialMap, Query};
+pub use tree::{SpatialMap, RectQuery};
 
+/// Convenience struct for creating a new R* Tree
 pub struct RStar<P, DIM, SHAPE, T> {
     _p: PhantomData<P>,
     _dim: PhantomData<DIM>,
@@ -47,10 +48,12 @@ impl<P, DIM, SHAPE, T> RStar<P, DIM, SHAPE, T>
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
           SHAPE: Shape<P, DIM>
 {
+    /// Create a new R* tree with min and max children lengths set to 32 and 64, respectively
     pub fn new() -> SpatialMap<P, DIM, SHAPE, RStarInsert<P, DIM, SHAPE, U32, U64, T>, RRemove<P, DIM, SHAPE, U32, T>, T> {
         SpatialMap::new(RStarInsert::new(), RRemove::new())
     }
 
+    /// Create a new R* tree with min and max children lengths as provided
     pub fn new_with_limits<MIN: Unsigned, MAX: Unsigned>() -> SpatialMap<P, DIM, SHAPE, RStarInsert<P, DIM, SHAPE, MIN, MAX, T>, RRemove<P, DIM, SHAPE, MIN, T>, T> {
         SpatialMap::new(RStarInsert::new(), RRemove::new())
     }

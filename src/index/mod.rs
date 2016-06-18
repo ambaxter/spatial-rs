@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 
 use generic_array::ArrayLength;
-use tree::{LevelNode, Query, Leaf};
+use tree::{LevelNode, RectQuery, Leaf};
 pub mod rstar;
 pub mod r;
 
@@ -29,7 +29,7 @@ pub trait IndexRemove<P, DIM, SHAPE, T, I>
         (&self,
          mut root: LevelNode<P, DIM, SHAPE, T>,
          insert_index: &I,
-         query: Query<P, DIM, SHAPE, T>,
+         query: RectQuery<P, DIM>,
          mut f: F)
          -> (LevelNode<P, DIM, SHAPE, T>, Vec<Leaf<P, DIM, SHAPE, T>>);
 }

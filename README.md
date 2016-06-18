@@ -9,6 +9,7 @@ The march to 0.1.0:
 - [x] Refactor the trees (for the 4th time) to support retain and ```Leaf<P, D, S, T> where S: Shape<P, D>``` so that users can define their own leaf shapes
 - [x] For remove and retain, do users even need their leaves back?
 - [x] Make Rect::margin a trait
+- [x] Split SpatialMapQuery trait and RectQuery
 - [ ] Document tree, index, index::r and index::rstar
 - [ ] Doc-tests for tree, index, index::r and index::rstar
 - [ ] Tests for tree, index, index::r and index::rstar
@@ -18,7 +19,7 @@ The march to 0.1.0:
 
 0.2.0:
 - [ ] Inevitable bug fixes
-- [ ] No public library interface changes unless bug fixes demand it
+- [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
 - [ ] Macro so users can create their own Shapes enum
 - [ ] Move the tree iterator code into macros?
 - [ ] R-Tree, R+Tree: implement, document, test, and benchmark
@@ -26,13 +27,13 @@ The march to 0.1.0:
 
 0.3.0:
 - [ ] Inevitable bug fixes
-- [ ] No public library interface changes unless bug fixes demand it
+- [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
 - [ ] X-Tree: implement, document, test, and benchmark
 - [ ] ???
 
 0.4.0:
 - [ ] Inevitable bug fixes
-- [ ] No public library interface changes unless bug fixes demand it
+- [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
 - [ ] ???
 
 0.5.0:

@@ -55,8 +55,8 @@ impl<P, DIM, SHAPE, T> InsertResult<P, DIM, SHAPE, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     fn is_reinsert(&self) -> bool {
-        match self {
-            &InsertResult::Reinsert(_) => true,
+        match *self {
+            InsertResult::Reinsert(_) => true,
             _ => false,
         }
     }
