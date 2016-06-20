@@ -26,7 +26,7 @@ const D_REINSERT_P: f32 = 0.30f32;
 const D_SPLIT_P: f32 = 0.40f32;
 const D_CHOOSE_SUBTREE_P: usize = 32;
 
-/// The sum of all of the Shapes's lengths. Used in the R* algorithm
+/// The sum of all of the Shapes's edges. Used in the R* algorithm
 pub trait Margin<P> {
     fn margin(&self) -> P;
 }
@@ -100,7 +100,7 @@ impl<P, DIM, SHAPE, MIN, MAX, T> RStarInsert<P, DIM, SHAPE, MIN, MAX, T>
         // TODO: What if min_k < MIN?
         let min_k = cmp::max((MAX::to_usize() as f32 * split_p) as usize, 1);
         let max_k = cmp::max(MAX::to_usize() - (2 * min_k) + 1, min_k + 1);
-        // On max_k==min_k, the iterator in split is a no-op and vec splits occur at index 0.
+        // On max_k==min_k, the iterator in split is a no-op and vec splits occur at index 0. Happens with M - 2m + 1 and M - 2m + 2 for various inputs for smaller Ms.
         // The above line should prevent this, but assert just to make sure
         assert!(max_k > min_k, "max_k({:?}) must be greater than min_k({:?})", max_k, min_k);
         RStarInsert{
