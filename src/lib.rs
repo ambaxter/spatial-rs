@@ -5,15 +5,12 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-#[macro_use]
-extern crate itertools;
+#[macro_use] extern crate itertools;
+#[macro_use] extern crate generic_array;
 
 extern crate ordered_float;
 extern crate num;
 extern crate typenum;
-
-#[macro_use]
-extern crate generic_array;
 
 #[cfg(test)]
 #[macro_use]
@@ -62,12 +59,12 @@ impl<P, DIM, SHAPE, T> RStar<P, DIM, SHAPE, T>
 #[cfg(test)]
 mod tests {
 
-    use typenum::consts::{U4, U8};
+    use typenum::consts::{U8, U16};
     use super::*;
     #[test]
     fn rstar_integration() {
-        let mut tree_map = RStar::new_with_limits::<U4, U8>();
-        for i in 0..28 {
+        let mut tree_map = RStar::new_with_limits::<U8, U16>();
+        for i in 0..32 {
             let i_f32 = i as f32;
             tree_map.insert(Point::new(arr![f32; i_f32, i_f32, i_f32]), i);
             for leaf in tree_map.iter() {
@@ -75,8 +72,9 @@ mod tests {
             }
             println!("Nodes: {:?}", tree_map.root);
         }
-        /*
+        
         assert_eq!(tree_map.len(), tree_map.iter().count());
+        /*
         let query = RectQuery::ContainedBy(Rect::from_corners(arr![f32; 0.0f32, 0.0f32, 0.0f32], arr![f32; 9.0f32, 9.0f32, 9.0f32]));
         for leaf in tree_map.iter_query(query.clone()) {
             println!("ToRemove: {:?}, Item: {:?}", leaf.0, leaf.1)
