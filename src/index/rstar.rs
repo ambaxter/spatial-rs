@@ -100,7 +100,7 @@ impl<P, DIM, SHAPE, MIN, MAX, T> RStarInsert<P, DIM, SHAPE, MIN, MAX, T>
         // TODO: What if min_k < MIN?
         let min_k = cmp::max((MAX::to_usize() as f32 * split_p) as usize, 1);
         let max_k = cmp::max(MAX::to_usize() - (2 * min_k) + 1, min_k + 1);
-        // On max_k==min_k, the iterator in split is a no-op and vec splits occur at index 0. Happens with M - 2m + 1 and M - 2m + 2 for various inputs for smaller Ms.
+        // On max_k==min_k, the iterator in split is a no-op and vec splits occur at index 0. Happens with M - 2m + 1 and M - 2m + 2 for various smaller Ms.
         // The above line should prevent this, but assert just to make sure
         assert!(max_k > min_k, "max_k({:?}) must be greater than min_k({:?})", max_k, min_k);
         RStarInsert{
