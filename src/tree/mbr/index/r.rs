@@ -13,7 +13,7 @@ use std::fmt::Debug;
 use typenum::Unsigned;
 use generic_array::ArrayLength;
 use index::{IndexInsert, IndexRemove};
-use tree::{LevelNode, RectQuery, SpatialMapQuery, Leaf};
+use tree::{MbrNode, RectQuery, SpatialMapQuery, Leaf};
 use std::marker::PhantomData;
 
 const AT_ROOT: bool = true;
@@ -70,17 +70,17 @@ impl<P, DIM, SHAPE, MIN, T> RRemove<P, DIM, SHAPE, MIN, T>
     }
 
     /// Consume all child leaves and queue them for reinsert
-    fn consume_leaves_for_reinsert(&self, children: &mut Vec<LevelNode<P, DIM, SHAPE, T>>, to_reinsert: &mut Vec<Leaf<P, DIM, SHAPE, T>>) {
+    fn consume_leaves_for_reinsert(&self, children: &mut Vec<MbrNode<P, DIM, SHAPE, T>>, to_reinsert: &mut Vec<Leaf<P, DIM, SHAPE, T>>) {
         for ref mut child in children {
             match **child {
-                LevelNode::Leaves{ref mut children, ..} => to_reinsert.append(children),
-                LevelNode::Level{ref mut children, ..} => self.consume_leaves_for_reinsert(children, to_reinsert)
+                MbrNode::Leaves{ref mut children, ..} => to_reinsert.append(children),
+                MbrNode::Level{ref mut children, ..} => self.consume_leaves_for_reinsert(children, to_reinsert)
             }
         }
     }
 
     /// Recursively remove leaves from a level. Return true if the level should be retianed
-    fn remove_leaves_from_level<F: FnMut(&T) -> bool>(&self, query: &RectQuery<P, DIM>, level: &mut LevelNode<P, DIM, SHAPE, T>,
+    fn remove_leaves_from_level<F: FnMut(&T) -> bool>(&self, query: &RectQuery<P, DIM>, level: &mut MbrNode<P, DIM, SHAPE, T>,
         removed: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
         to_reinsert: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
         f: &mut F,
@@ -89,8 +89,8 @@ impl<P, DIM, SHAPE, MIN, T> RRemove<P, DIM, SHAPE, MIN, T>
                 return true;
             }
             match *level {
-                LevelNode::Leaves{ref mut mbr, ref mut children, ..} => return self.remove_matching_leaves(query, mbr, children, removed, to_reinsert, f, at_root),
-                LevelNode::Level{ref mut mbr, ref mut children, ..} => {
+                MbrNode::Leaves{ref mut mbr, ref mut children, ..} => return self.remove_matching_leaves(query, mbr, children, removed, to_reinsert, f, at_root),
+                MbrNode::Level{ref mut mbr, ref mut children, ..} => {
                     let orig_len = children.len();
                     children.retain_mut(|child| self.remove_leaves_from_level(query, child, removed, to_reinsert, f, NOT_AT_ROOT));
                     let children_removed = orig_len != children.len();
@@ -119,10 +119,10 @@ impl<P, DIM, SHAPE, MIN, T, I> IndexRemove<P, DIM, SHAPE, T, I> for RRemove<P, D
         MIN: Unsigned
 {
     fn remove_from_root<F: FnMut(&T) -> bool>(&self,
-        mut root: LevelNode<P, DIM, SHAPE, T>,
+        mut root: MbrNode<P, DIM, SHAPE, T>,
         insert_index: &I,
         query: RectQuery<P, DIM>,
-        mut f: F) -> (LevelNode<P, DIM, SHAPE, T>, Vec<Leaf<P, DIM, SHAPE, T>>) {
+        mut f: F) -> (MbrNode<P, DIM, SHAPE, T>, Vec<Leaf<P, DIM, SHAPE, T>>) {
 
             if root.is_empty() {
                 (root, Vec::with_capacity(0))

@@ -129,7 +129,7 @@ impl<P, DIM> Rect<P, DIM>
     }
 
 // TODO: I'm not sure if I like this
-// New Rect from corners
+/// New Rect from corners
     pub fn from_corners(x: GenericArray<P, DIM>, y: GenericArray<P, DIM>) -> Rect<P, DIM>{
         let mut edges = Rect::max_inverted();
         Point::new(x).expand_rect_to_fit(&mut edges);
@@ -137,7 +137,7 @@ impl<P, DIM> Rect<P, DIM>
         edges
     }
 
-// An inverted Rect where ever dimension's (x, y) coordinates are (MAX, MIN). Simplifies finding boundaries.
+/// An inverted Rect where ever dimension's (x, y) coordinates are (MAX, MIN). Simplifies finding boundaries.
     pub fn max_inverted() -> Rect<P, DIM> {
         let mut edges = GenericArray::new();
         for &mut (ref mut x, ref mut y) in edges.as_mut() {
@@ -608,17 +608,17 @@ mod tests {
     #[test]
     fn rect() {
 
-        let G_ONE: GenericArray<f64, U3> = arr![f64; 1.0f64, 1.0f64, 1.0f64];
-        let G_ZERO: GenericArray<f64, U3> = arr![f64; 0.0f64, 0.0f64, 0.0f64];
-        let G_NEG_ONE: GenericArray<f64, U3> = arr![f64; -1.0f64, -1.0f64, -1.0f64];
-        let G_NEG_TWO: GenericArray<f64, U3> = arr![f64; -2.0f64, -2.0f64, -2.0f64];
+        let g_one: GenericArray<f64, U3> = arr![f64; 1.0f64, 1.0f64, 1.0f64];
+        let g_zero: GenericArray<f64, U3> = arr![f64; 0.0f64, 0.0f64, 0.0f64];
+        let g_neg_one: GenericArray<f64, U3> = arr![f64; -1.0f64, -1.0f64, -1.0f64];
+        let g_neg_two: GenericArray<f64, U3> = arr![f64; -2.0f64, -2.0f64, -2.0f64];
 
         // contained
-        let zero_one = Rect::from_corners(G_ZERO.clone(), G_ONE.clone());
+        let zero_one = Rect::from_corners(g_zero.clone(), g_one.clone());
         // overlapped
-        let neg_one_one = Rect::from_corners(G_NEG_ONE.clone(), G_ONE.clone());
+        let neg_one_one = Rect::from_corners(g_neg_one.clone(), g_one.clone());
         // outside
-        let neg_two_neg_one = Rect::from_corners(G_NEG_TWO.clone(), G_NEG_ONE.clone());
+        let neg_two_neg_one = Rect::from_corners(g_neg_two.clone(), g_neg_one.clone());
 
         // Shape tests
         // dim

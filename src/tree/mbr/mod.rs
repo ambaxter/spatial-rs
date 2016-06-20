@@ -4,6 +4,7 @@
 // http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
+pub mod index;
 
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
@@ -17,7 +18,38 @@ use index::{IndexInsert, IndexRemove};
 use std::ops::Deref;
 use std::mem;
 
+/// Rect based query
+#[derive(Debug, Clone)]
+pub enum RectQuery<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
+{
+    /// Matching leaves are ones that are completely contained by this rect
+    ContainedBy(Rect<P, DIM>),
+    /// Matching leaves are ones that overlap this rect
+    Overlaps(Rect<P, DIM>),
+}
 
+impl<P, DIM, SHAPE, T> MbrMapQuery<P, DIM, SHAPE, T> for RectQuery<P, DIM>
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
+          DIM: ArrayLength<P> + ArrayLength<(P,P)>,
+          SHAPE: Shape<P, DIM> {
+
+    // Does this query accept the given leaf?
+    fn accept_leaf(&self, leaf: &Leaf<P, DIM, SHAPE, T>) -> bool {
+        match *self {
+            RectQuery::ContainedBy(ref query) => leaf.shape.contained_by_rect(query),
+            RectQuery::Overlaps(ref query) => leaf.shape.overlapped_by_rect(query),
+        }
+    }
+
+    // Does this query accept the given level?
+    fn accept_level(&self, level: &MbrNode<P, DIM, SHAPE, T>) -> bool {
+        match *self {
+            RectQuery::ContainedBy(ref query) => level.mbr().overlapped_by_rect(query),
+            RectQuery::Overlaps(ref query) => level.mbr().overlapped_by_rect(query),
+        }
+    }
+}
 
 /// Level node of a tree. Either contains other levels or leaves
 #[derive(Debug)]
@@ -141,9 +173,8 @@ impl<P, DIM, SHAPE, T> Shape<P, DIM> for MbrNode<P, DIM, SHAPE, T>
     }
 }
 
-
 /// The generic container interface for spatial maps. Will, at the very least, be able to support R, R+, R*, and X trees
-pub struct SpatialMap<P, DIM, SHAPE, I, R, T>
+pub struct MbrMap<P, DIM, SHAPE, I, R, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
           I: IndexInsert<P, DIM, SHAPE, T>,
           R: IndexRemove<P, DIM, SHAPE, T, I>
@@ -154,7 +185,7 @@ pub struct SpatialMap<P, DIM, SHAPE, I, R, T>
     len: usize,
 }
 
-impl<P, DIM, SHAPE, I, R, T> SpatialMap<P, DIM, SHAPE, I, R, T>
+impl<P, DIM, SHAPE, I, R, T> MbrMap<P, DIM, SHAPE, I, R, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
           SHAPE: Shape<P, DIM>,
@@ -162,9 +193,9 @@ impl<P, DIM, SHAPE, I, R, T> SpatialMap<P, DIM, SHAPE, I, R, T>
           R: IndexRemove<P, DIM, SHAPE, T, I>,
 {
 
-    /// Create a new SpatialMap with the given insert and remove indexes
-    pub fn new(insert_index: I, remove_index: R) -> SpatialMap<P, DIM, SHAPE, I, R, T> {
-        SpatialMap{insert_index: insert_index, remove_index: remove_index, root: MbrNode::new_leaves(), len: 0}
+    /// Create a new MbrMap with the given insert and remove indexes
+    pub fn new(insert_index: I, remove_index: R) -> MbrMap<P, DIM, SHAPE, I, R, T> {
+        MbrMap{insert_index: insert_index, remove_index: remove_index, root: MbrNode::new_leaves(), len: 0}
     }
 
     /// Insert an item
