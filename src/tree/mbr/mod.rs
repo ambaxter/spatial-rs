@@ -12,15 +12,15 @@ use shapes::{Shape, Rect};
 use std::slice::{Iter as SliceIter, IterMut as SliceIterMut};
 use std::fmt::Debug;
 use generic_array::ArrayLength;
-use std::marker::PhantomData;
 use std::rc::Rc;
-use index::{IndexInsert, IndexRemove};
+use tree::mbr::index::{IndexInsert, IndexRemove};
+use tree::{Leaf, SpatialQuery};
 use std::ops::Deref;
 use std::mem;
 
 /// Rect based query
 #[derive(Debug, Clone)]
-pub enum RectQuery<P, DIM>
+pub enum MbrQuery<P, DIM>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     /// Matching leaves are ones that are completely contained by this rect
@@ -29,24 +29,24 @@ pub enum RectQuery<P, DIM>
     Overlaps(Rect<P, DIM>),
 }
 
-impl<P, DIM, SHAPE, T> MbrMapQuery<P, DIM, SHAPE, T> for RectQuery<P, DIM>
+impl<P, DIM, SHAPE, T> SpatialQuery<P, DIM, SHAPE, MbrNode<P, DIM, SHAPE, T>, T> for MbrQuery<P, DIM>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          SHAPE: Shape<P, DIM> {
+          SHAPE: Shape<P, DIM>{
 
     // Does this query accept the given leaf?
     fn accept_leaf(&self, leaf: &Leaf<P, DIM, SHAPE, T>) -> bool {
         match *self {
-            RectQuery::ContainedBy(ref query) => leaf.shape.contained_by_rect(query),
-            RectQuery::Overlaps(ref query) => leaf.shape.overlapped_by_rect(query),
+            MbrQuery::ContainedBy(ref query) => leaf.shape.contained_by_rect(query),
+            MbrQuery::Overlaps(ref query) => leaf.shape.overlapped_by_rect(query),
         }
     }
 
     // Does this query accept the given level?
     fn accept_level(&self, level: &MbrNode<P, DIM, SHAPE, T>) -> bool {
         match *self {
-            RectQuery::ContainedBy(ref query) => level.mbr().overlapped_by_rect(query),
-            RectQuery::Overlaps(ref query) => level.mbr().overlapped_by_rect(query),
+            MbrQuery::ContainedBy(ref query) => level.overlapped_by_rect(query),
+            MbrQuery::Overlaps(ref query) => level.overlapped_by_rect(query),
         }
     }
 }
@@ -205,12 +205,12 @@ impl<P, DIM, SHAPE, I, R, T> MbrMap<P, DIM, SHAPE, I, R, T>
     }
 
     /// Remove all items whose shapes are accepted by the query
-    pub fn remove(&mut self, query: RectQuery<P, DIM>) -> Vec<(SHAPE, T)> {
+    pub fn remove(&mut self, query: MbrQuery<P, DIM>) -> Vec<(SHAPE, T)> {
         self.retain(query, |_| false)
     }
 
     /// Remove all items whose shapes are accepted by the query and where f(&T) returns false
-    pub fn retain<F: FnMut(&T) -> bool>(&mut self, query: RectQuery<P, DIM>, f: F) -> Vec<(SHAPE, T)> {
+    pub fn retain<F: FnMut(&T) -> bool>(&mut self, query: MbrQuery<P, DIM>, f: F) -> Vec<(SHAPE, T)> {
         let (new_root, removed) =
             self.remove_index.remove_from_root(mem::replace(&mut self.root, MbrNode::new_no_alloc()), &self.insert_index, query, f);
         self.len -= removed.len();
@@ -240,21 +240,21 @@ impl<P, DIM, SHAPE, I, R, T> MbrMap<P, DIM, SHAPE, I, R, T>
 
     /// Iter for the map
     pub fn iter(&self) -> Iter<P, DIM, SHAPE, T> {
-        Iter::new(RectQuery::Overlaps(Rect::max()), &self.root)
+        Iter::new(MbrQuery::Overlaps(Rect::max()), &self.root)
     }
 
     /// IterMut for the map
     pub fn iter_mut(&mut self) -> IterMut<P, DIM, SHAPE, T> {
-        IterMut::new(RectQuery::Overlaps(Rect::max()), &mut self.root)
+        IterMut::new(MbrQuery::Overlaps(Rect::max()), &mut self.root)
     }
 
     /// Iter for the map with a given query
-    pub fn iter_query(&self, query: RectQuery<P, DIM>) -> Iter<P, DIM, SHAPE, T> {
+    pub fn iter_query(&self, query: MbrQuery<P, DIM>) -> Iter<P, DIM, SHAPE, T> {
         Iter::new(query, &self.root)
     }
 
     /// IterMut for the map with a given query
-    pub fn iter_query_mut(&mut self, query: RectQuery<P, DIM>) -> IterMut<P, DIM, SHAPE, T> {
+    pub fn iter_query_mut(&mut self, query: MbrQuery<P, DIM>) -> IterMut<P, DIM, SHAPE, T> {
         IterMut::new(query, &mut self.root)
     }
 }
@@ -266,7 +266,7 @@ pub struct Iter<'tree, P, DIM, SHAPE, T>
           SHAPE: 'tree,
           T: 'tree
 {
-    query: Rc<RectQuery<P, DIM>>,
+    query: Rc<MbrQuery<P, DIM>>,
     level_iter: LevelIter<'tree, P, DIM, SHAPE, T>,
     leaf_iter: Option<SliceIter<'tree, Leaf<P, DIM, SHAPE, T>>>,
     finished: bool,
@@ -279,7 +279,7 @@ impl<'tree, P, DIM, SHAPE, T> Iter<'tree, P, DIM, SHAPE, T>
           T: 'tree
 {
     /// Constructor
-    fn new(query: RectQuery<P, DIM>, root: &'tree MbrNode<P, DIM, SHAPE, T>) -> Iter<'tree, P, DIM, SHAPE, T> {
+    fn new(query: MbrQuery<P, DIM>, root: &'tree MbrNode<P, DIM, SHAPE, T>) -> Iter<'tree, P, DIM, SHAPE, T> {
         let rc_query = Rc::new(query);
         let level_iter = LevelIter::new(rc_query.clone(), root);
         Iter{query: rc_query, level_iter: level_iter, leaf_iter: None, finished: false}
@@ -339,7 +339,7 @@ struct LevelIter<'tree, P, DIM, SHAPE, T>
           SHAPE: 'tree,
           T: 'tree
 {
-    query: Rc<RectQuery<P, DIM>>,
+    query: Rc<MbrQuery<P, DIM>>,
     root: &'tree MbrNode<P, DIM, SHAPE, T>,
     level_stack: Vec<SliceIter<'tree, MbrNode<P, DIM, SHAPE, T>>>,
     finished: bool,
@@ -352,7 +352,7 @@ impl<'tree, P, DIM, SHAPE, T> LevelIter<'tree, P, DIM, SHAPE, T>
           T: 'tree {
     
     /// Constructor
-    fn new(query: Rc<RectQuery<P, DIM>>, root: &'tree MbrNode<P, DIM, SHAPE, T>) -> LevelIter<'tree, P, DIM, SHAPE, T> {
+    fn new(query: Rc<MbrQuery<P, DIM>>, root: &'tree MbrNode<P, DIM, SHAPE, T>) -> LevelIter<'tree, P, DIM, SHAPE, T> {
         if root.is_empty() || !query.accept_level(root) {
             return LevelIter{query: query, root: root, level_stack: Vec::with_capacity(0), finished: true};
         }
@@ -429,7 +429,7 @@ pub struct IterMut<'tree, P, DIM, SHAPE, T>
           SHAPE: 'tree,
           T: 'tree
 {
-    query: Rc<RectQuery<P, DIM>>,
+    query: Rc<MbrQuery<P, DIM>>,
     level_iter: LevelIterMut<'tree, P, DIM, SHAPE, T>,
     leaf_iter: Option<SliceIterMut<'tree, Leaf<P, DIM, SHAPE, T>>>,
     finished: bool,
@@ -442,7 +442,7 @@ impl<'tree, P, DIM, SHAPE, T> IterMut<'tree, P, DIM, SHAPE, T>
           T: 'tree
 {
     /// Constructor
-    fn new(query: RectQuery<P, DIM>, root: &'tree mut MbrNode<P, DIM, SHAPE, T>) -> IterMut<'tree, P, DIM, SHAPE, T> {
+    fn new(query: MbrQuery<P, DIM>, root: &'tree mut MbrNode<P, DIM, SHAPE, T>) -> IterMut<'tree, P, DIM, SHAPE, T> {
         let rc_query = Rc::new(query);
         let level_iter = LevelIterMut::new(rc_query.clone(), root);
         IterMut{query: rc_query, level_iter: level_iter, leaf_iter: None, finished: false}
@@ -507,7 +507,7 @@ struct LevelIterMut<'tree, P, DIM, SHAPE, T>
           SHAPE: 'tree,
           T: 'tree
 {
-    query: Rc<RectQuery<P, DIM>>,
+    query: Rc<MbrQuery<P, DIM>>,
     root: &'tree mut MbrNode<P, DIM, SHAPE, T>,
     level_stack: Vec<SliceIterMut<'tree, MbrNode<P, DIM, SHAPE, T>>>,
     finished: bool,
@@ -520,7 +520,7 @@ impl<'tree, P, DIM, SHAPE, T> LevelIterMut<'tree, P, DIM, SHAPE, T>
           T: 'tree {
 
     /// Constructor
-    fn new(query: Rc<RectQuery<P, DIM>>, root: &'tree mut MbrNode<P, DIM, SHAPE, T>) -> LevelIterMut<'tree, P, DIM, SHAPE, T> {
+    fn new(query: Rc<MbrQuery<P, DIM>>, root: &'tree mut MbrNode<P, DIM, SHAPE, T>) -> LevelIterMut<'tree, P, DIM, SHAPE, T> {
         if root.is_empty() || !query.accept_level(root) {
             return LevelIterMut{query: query, root: root, level_stack: Vec::with_capacity(0), finished: true};
         }

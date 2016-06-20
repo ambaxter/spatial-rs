@@ -7,6 +7,14 @@
 
 pub mod mbr;
 
+use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
+use std::ops::{MulAssign, AddAssign};
+use shapes::{Shape, Rect};
+use std::fmt::Debug;
+use generic_array::ArrayLength;
+use std::marker::PhantomData;
+
+
 /// A tree leaf
 #[derive(Debug)]
 pub struct Leaf<P, DIM, SHAPE, T>
@@ -77,11 +85,11 @@ impl<P, DIM, SHAPE, T> Shape<P, DIM> for Leaf<P, DIM, SHAPE, T>
 }
 
 /// Query trait for navigating the tree
-pub trait SpatialMapQuery<P, DIM, SHAPE, T>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)> 
+pub trait SpatialQuery<P, DIM, SHAPE, LEVEL, T>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     /// Returns true if the leaf matches the query
     fn accept_leaf(&self, leaf: &Leaf<P, DIM, SHAPE, T>) -> bool;
     /// Returns true if the level matches the query
-    fn accept_level(&self, level: &MbrNode<P, DIM, SHAPE, T>) -> bool;
+    fn accept_level(&self, level: &LEVEL) -> bool;
 }

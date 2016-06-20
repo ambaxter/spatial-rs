@@ -18,19 +18,19 @@ extern crate approx;
 
 mod shapes;
 mod tree;
-mod index;
 mod vecext;
 
 use typenum::{U32, U64, Unsigned};
-use index::r::RRemove;
-use index::rstar::RStarInsert;
+use tree::mbr::index::r::RRemove;
+use tree::mbr::index::rstar::RStarInsert;
+pub use tree::mbr::{MbrMap, MbrQuery};
 use generic_array::ArrayLength;
 pub use shapes::{Shape, Shapes, Point, LineSegment, Rect};
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
 use std::fmt::Debug;
 use std::marker::PhantomData;
-pub use tree::{SpatialMap, RectQuery};
+
 
 /// Convenience struct for creating a new R* Tree
 pub struct RStar<P, DIM, SHAPE, T> {
@@ -46,13 +46,13 @@ impl<P, DIM, SHAPE, T> RStar<P, DIM, SHAPE, T>
           SHAPE: Shape<P, DIM>,
 {
     /// Create a new R* tree with min and max children lengths set to 32 and 64, respectively
-    pub fn new() -> SpatialMap<P, DIM, SHAPE, RStarInsert<P, DIM, SHAPE, U32, U64, T>, RRemove<P, DIM, SHAPE, U32, T>, T> {
-        SpatialMap::new(RStarInsert::new(), RRemove::new())
+    pub fn new() -> MbrMap<P, DIM, SHAPE, RStarInsert<P, DIM, SHAPE, U32, U64, T>, RRemove<P, DIM, SHAPE, U32, T>, T> {
+        MbrMap::new(RStarInsert::new(), RRemove::new())
     }
 
     /// Create a new R* tree with min and max children lengths as provided
-    pub fn new_with_limits<MIN: Unsigned, MAX: Unsigned>() -> SpatialMap<P, DIM, SHAPE, RStarInsert<P, DIM, SHAPE, MIN, MAX, T>, RRemove<P, DIM, SHAPE, MIN, T>, T> {
-        SpatialMap::new(RStarInsert::new(), RRemove::new())
+    pub fn new_with_limits<MIN: Unsigned, MAX: Unsigned>() -> MbrMap<P, DIM, SHAPE, RStarInsert<P, DIM, SHAPE, MIN, MAX, T>, RRemove<P, DIM, SHAPE, MIN, T>, T> {
+        MbrMap::new(RStarInsert::new(), RRemove::new())
     }
 }
 

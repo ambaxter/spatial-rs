@@ -12,8 +12,9 @@ use shapes::{Shape, Rect};
 use std::fmt::Debug;
 use typenum::Unsigned;
 use generic_array::ArrayLength;
-use index::{IndexInsert, IndexRemove};
-use tree::{MbrNode, RectQuery, SpatialMapQuery, Leaf};
+use tree::mbr::{MbrNode, MbrQuery};
+use tree::{Leaf, SpatialQuery};
+use tree::mbr::index::{IndexInsert, IndexRemove};
 use std::marker::PhantomData;
 
 const AT_ROOT: bool = true;
@@ -47,7 +48,7 @@ impl<P, DIM, SHAPE, MIN, T> RRemove<P, DIM, SHAPE, MIN, T>
     }
 
     /// Removes matching leaves from a leaf level. Return true if the level should be retianed
-    fn remove_matching_leaves<F: FnMut(&T) -> bool>(&self, query: &RectQuery<P, DIM>, mbr: &mut Rect<P, DIM>, children: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
+    fn remove_matching_leaves<F: FnMut(&T) -> bool>(&self, query: &MbrQuery<P, DIM>, mbr: &mut Rect<P, DIM>, children: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
         removed: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
         to_reinsert: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
         f: &mut F,
@@ -80,7 +81,7 @@ impl<P, DIM, SHAPE, MIN, T> RRemove<P, DIM, SHAPE, MIN, T>
     }
 
     /// Recursively remove leaves from a level. Return true if the level should be retianed
-    fn remove_leaves_from_level<F: FnMut(&T) -> bool>(&self, query: &RectQuery<P, DIM>, level: &mut MbrNode<P, DIM, SHAPE, T>,
+    fn remove_leaves_from_level<F: FnMut(&T) -> bool>(&self, query: &MbrQuery<P, DIM>, level: &mut MbrNode<P, DIM, SHAPE, T>,
         removed: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
         to_reinsert: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
         f: &mut F,
@@ -121,7 +122,7 @@ impl<P, DIM, SHAPE, MIN, T, I> IndexRemove<P, DIM, SHAPE, T, I> for RRemove<P, D
     fn remove_from_root<F: FnMut(&T) -> bool>(&self,
         mut root: MbrNode<P, DIM, SHAPE, T>,
         insert_index: &I,
-        query: RectQuery<P, DIM>,
+        query: MbrQuery<P, DIM>,
         mut f: F) -> (MbrNode<P, DIM, SHAPE, T>, Vec<Leaf<P, DIM, SHAPE, T>>) {
 
             if root.is_empty() {

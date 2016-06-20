@@ -6,7 +6,8 @@
 // copied, modified, or distributed except according to those terms.
 
 use generic_array::ArrayLength;
-use tree::{MbrNode, RectQuery, Leaf};
+use tree::mbr::{MbrNode, MbrQuery};
+use tree::Leaf;
 pub mod rstar;
 pub mod r;
 
@@ -29,7 +30,7 @@ pub trait IndexRemove<P, DIM, SHAPE, T, I>
         (&self,
          mut root: MbrNode<P, DIM, SHAPE, T>,
          insert_index: &I,
-         query: RectQuery<P, DIM>,
+         query: MbrQuery<P, DIM>,
          mut f: F)
          -> (MbrNode<P, DIM, SHAPE, T>, Vec<Leaf<P, DIM, SHAPE, T>>);
 }

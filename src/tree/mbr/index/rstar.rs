@@ -7,8 +7,9 @@
 
 use num::{Zero, Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign, Range, Deref};
-use tree::{MbrNode, Leaf};
-use index::IndexInsert;
+use tree::mbr::MbrNode;
+use tree::Leaf;
+use tree::mbr::index::IndexInsert;
 use shapes::{Shape, Rect};
 use std::fmt::Debug;
 use std::marker::PhantomData;
