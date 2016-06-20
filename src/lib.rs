@@ -67,30 +67,19 @@ mod tests {
         for i in 0..32 {
             let i_f32 = i as f32;
             tree_map.insert(Point::new(arr![f32; i_f32, i_f32, i_f32]), i);
-            for leaf in tree_map.iter() {
-                println!("All: {:?}, Item: {:?}", leaf.0, leaf.1)
-            }
-            println!("Nodes: {:?}", tree_map.root);
         }
         
-        assert_eq!(tree_map.len(), tree_map.iter().count());
-        /*
+        assert_eq!(tree_map.len(), tree_map.iter().count());        
         let query = RectQuery::ContainedBy(Rect::from_corners(arr![f32; 0.0f32, 0.0f32, 0.0f32], arr![f32; 9.0f32, 9.0f32, 9.0f32]));
-        for leaf in tree_map.iter_query(query.clone()) {
-            println!("ToRemove: {:?}, Item: {:?}", leaf.0, leaf.1)
-        }
+
         let removed = tree_map.remove(query.clone());
         assert_eq!(10, removed.len());
-        assert_eq!(18, tree_map.len());
+        assert_eq!(22, tree_map.len());
         assert_eq!(tree_map.len(), tree_map.iter().count());
-        println!("After Removed: {:?}", tree_map.root);
-        
+       
         let removed_retain = tree_map.retain(RectQuery::ContainedBy(Rect::max()), |x| *x >= 20);
         assert_eq!(10, removed_retain.len());
+        assert_eq!(12, tree_map.len());
         assert_eq!(tree_map.len(), tree_map.iter().count());
-        for leaf in tree_map.iter() {
-            println!("All: {:?}, Item: {:?}", leaf.0, leaf.1)
-        }
-        */
     }
 }

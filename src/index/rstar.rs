@@ -94,14 +94,15 @@ impl<P, DIM, SHAPE, MIN, MAX, T> RStarInsert<P, DIM, SHAPE, MIN, MAX, T>
     }
 
     pub fn new_with_options(reinsert_p: f32, split_p: f32, choose_subtree_p: usize) -> RStarInsert<P, DIM, SHAPE, MIN, MAX, T> {
+        assert!(MIN::to_usize() > 0, "MIN({:?}) must be at least 1.", MIN::to_usize());
         assert!(MAX::to_usize() > MIN::to_usize(), "MAX({:?}) must be greater than MIN({:?})", MAX::to_usize(), MIN::to_usize());
 
         let reinsert_m = MAX::to_usize() - cmp::max((MAX::to_usize() as f32 * reinsert_p) as usize, 1);
         // TODO: What if min_k < MIN?
         let min_k = cmp::max((MAX::to_usize() as f32 * split_p) as usize, 1);
         let max_k = cmp::max(MAX::to_usize() - (2 * min_k) + 1, min_k + 1);
-        // On max_k==min_k, the iterator in split is a no-op and vec splits occur at index 0. Happens with M - 2m + 1 and M - 2m + 2 for various smaller Ms.
-        // The above line should prevent this, but assert just to make sure
+        // On max_k==min_k, the iterator in split is a no-op and vec splits occur at index 0. Happens with M - 2m + 1 and M - 2m + 2 for various small Ms.
+        // The above line should prevent this, but assert in case code changes
         assert!(max_k > min_k, "max_k({:?}) must be greater than min_k({:?})", max_k, min_k);
         RStarInsert{
             reinsert_m: reinsert_m,
