@@ -17,35 +17,35 @@ use std::marker::PhantomData;
 
 /// A tree leaf
 #[derive(Debug)]
-pub struct Leaf<P, DIM, SHAPE, T>
+pub struct Leaf<P, DIM, LSHAPE, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
-    pub shape: SHAPE,
+    pub shape: LSHAPE,
     pub item: T,
     _p: PhantomData<P>,
     _dim: PhantomData<DIM>,
 }
 
-impl<P, DIM, SHAPE, T> Leaf<P, DIM, SHAPE, T>
+impl<P, DIM, LSHAPE, T> Leaf<P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          SHAPE: Shape<P, DIM>
+          LSHAPE: Shape<P, DIM>
 {
     /// New leaf from shape and item
-    pub fn new(shape: SHAPE, item: T) -> Leaf<P, DIM, SHAPE, T> {
+    pub fn new(shape: LSHAPE, item: T) -> Leaf<P, DIM, LSHAPE, T> {
         Leaf{shape: shape, item: item, _p: PhantomData, _dim: PhantomData}
     }
 
     /// Consumes self, returning the shape and item
-    pub fn extract(self) -> (SHAPE, T) {
+    pub fn extract(self) -> (LSHAPE, T) {
         (self.shape, self.item)
     }
 }
 
-impl<P, DIM, SHAPE, T> Shape<P, DIM> for Leaf<P, DIM, SHAPE, T>
+impl<P, DIM, LSHAPE, T> Shape<P, DIM> for Leaf<P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          SHAPE: Shape<P, DIM> {
+          LSHAPE: Shape<P, DIM> {
 
     fn dim(&self) -> usize {
         self.shape.dim()
@@ -85,11 +85,56 @@ impl<P, DIM, SHAPE, T> Shape<P, DIM> for Leaf<P, DIM, SHAPE, T>
 }
 
 /// Query trait for navigating the tree
-pub trait SpatialQuery<P, DIM, SHAPE, LEVEL, T>
+pub trait SpatialQuery<P, DIM, LSHAPE, LEVEL, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     /// Returns true if the leaf matches the query
-    fn accept_leaf(&self, leaf: &Leaf<P, DIM, SHAPE, T>) -> bool;
+    fn accept_leaf(&self, leaf: &Leaf<P, DIM, LSHAPE, T>) -> bool;
     /// Returns true if the level matches the query
     fn accept_level(&self, level: &LEVEL) -> bool;
 }
+
+/*
+// TODO: Figure this out later :/
+pub trait SpatialMap<'tree, P, DIM, LSHAPE, LEVEL, T>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
+        LSHAPE: 'tree,
+        T: 'tree
+{
+    /// Insert an item
+    fn insert(&mut self, shape: LSHAPE, item: T);
+
+    /// Remove all items whose shapes are accepted by the query
+    fn remove<Q: SpatialQuery<P, DIM, LSHAPE, LEVEL, T>>(&mut self, query: Q) -> Vec<(LSHAPE, T)>;
+
+    /// Remove all items whose shapes are accepted by the query and where f(&T) returns false
+    fn retain<Q, F>(&mut self, query: Q, f: F) -> Vec<(LSHAPE, T)>
+        where Q: SpatialQuery<P, DIM, LSHAPE, LEVEL, T>,
+        F: FnMut(&T) -> bool;
+
+    /// Whether the map is empty
+    fn is_empty(&self) -> bool;
+
+    /// Length of the map
+    fn len(&self) -> usize;
+
+    /// Clear the map
+    fn clear(&mut self);
+
+    /// Iter for the map
+    fn iter<ITER: Iterator<Item=(&'tree LSHAPE, &'tree T)>>(&'tree self) -> ITER;
+
+    /// IterMut for the map
+    fn iter_mut<ITERM: Iterator<Item=(&'tree LSHAPE, &'tree mut T)>>(&'tree mut self) -> ITERM;
+
+    /// Iter for the map with a given query
+    fn iter_query<Q, ITER>(&'tree self, query: Q) -> ITER
+        where Q: SpatialQuery<P, DIM, LSHAPE, LEVEL, T>,
+        ITER: Iterator<Item=(&'tree LSHAPE, &'tree T)>;
+
+    /// IterMut for the map with a given query
+    fn iter_query_mut<Q, ITERM>(&'tree mut self, query: Q) -> ITERM
+        where Q: SpatialQuery<P, DIM, LSHAPE, LEVEL, T>,
+        ITERM: Iterator<Item=(&'tree LSHAPE, &'tree mut T)>;
+}
+*/

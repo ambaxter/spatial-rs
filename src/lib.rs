@@ -33,25 +33,25 @@ use std::marker::PhantomData;
 
 
 /// Convenience struct for creating a new R* Tree
-pub struct RStar<P, DIM, SHAPE, T> {
+pub struct RStar<P, DIM, LSHAPE, T> {
     _p: PhantomData<P>,
     _dim: PhantomData<DIM>,
-    _s: PhantomData<SHAPE>,
+    _s: PhantomData<LSHAPE>,
     _t: PhantomData<T>,
 }
 
-impl<P, DIM, SHAPE, T> RStar<P, DIM, SHAPE, T>
+impl<P, DIM, LSHAPE, T> RStar<P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
-          SHAPE: Shape<P, DIM>,
+          LSHAPE: Shape<P, DIM>,
 {
     /// Create a new R* tree with min and max children lengths set to 32 and 64, respectively
-    pub fn new() -> MbrMap<P, DIM, SHAPE, RStarInsert<P, DIM, SHAPE, U32, U64, T>, RRemove<P, DIM, SHAPE, U32, T>, T> {
+    pub fn new() -> MbrMap<P, DIM, LSHAPE, RStarInsert<P, DIM, LSHAPE, U32, U64, T>, RRemove<P, DIM, LSHAPE, U32, T>, T> {
         MbrMap::new(RStarInsert::new(), RRemove::new())
     }
 
     /// Create a new R* tree with min and max children lengths as provided
-    pub fn new_with_limits<MIN: Unsigned, MAX: Unsigned>() -> MbrMap<P, DIM, SHAPE, RStarInsert<P, DIM, SHAPE, MIN, MAX, T>, RRemove<P, DIM, SHAPE, MIN, T>, T> {
+    pub fn new_with_limits<MIN: Unsigned, MAX: Unsigned>() -> MbrMap<P, DIM, LSHAPE, RStarInsert<P, DIM, LSHAPE, MIN, MAX, T>, RRemove<P, DIM, LSHAPE, MIN, T>, T> {
         MbrMap::new(RStarInsert::new(), RRemove::new())
     }
 }

@@ -12,25 +12,25 @@ pub mod rstar;
 pub mod r;
 
 /// Insert the leaf into the root
-pub trait IndexInsert<P, DIM, SHAPE, T>
+pub trait IndexInsert<P, DIM, LSHAPE, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     fn insert_into_root(&self,
-                        mut root: MbrNode<P, DIM, SHAPE, T>,
-                        leaf: Leaf<P, DIM, SHAPE, T>)
-                        -> MbrNode<P, DIM, SHAPE, T>;
+                        mut root: MbrNode<P, DIM, LSHAPE, T>,
+                        leaf: Leaf<P, DIM, LSHAPE, T>)
+                        -> MbrNode<P, DIM, LSHAPE, T>;
 }
 
 /// Remove entries from the tree that match the query, but not the retain function f.
-pub trait IndexRemove<P, DIM, SHAPE, T, I>
+pub trait IndexRemove<P, DIM, LSHAPE, T, I>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
-          I: IndexInsert<P, DIM, SHAPE, T>
+          I: IndexInsert<P, DIM, LSHAPE, T>
 {
     fn remove_from_root<F: FnMut(&T) -> bool>
         (&self,
-         mut root: MbrNode<P, DIM, SHAPE, T>,
+         mut root: MbrNode<P, DIM, LSHAPE, T>,
          insert_index: &I,
          query: MbrQuery<P, DIM>,
          mut f: F)
-         -> (MbrNode<P, DIM, SHAPE, T>, Vec<Leaf<P, DIM, SHAPE, T>>);
+         -> (MbrNode<P, DIM, LSHAPE, T>, Vec<Leaf<P, DIM, LSHAPE, T>>);
 }

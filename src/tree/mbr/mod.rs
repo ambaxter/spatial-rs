@@ -29,13 +29,13 @@ pub enum MbrQuery<P, DIM>
     Overlaps(Rect<P, DIM>),
 }
 
-impl<P, DIM, SHAPE, T> SpatialQuery<P, DIM, SHAPE, MbrNode<P, DIM, SHAPE, T>, T> for MbrQuery<P, DIM>
+impl<P, DIM, LSHAPE, T> SpatialQuery<P, DIM, LSHAPE, MbrNode<P, DIM, LSHAPE, T>, T> for MbrQuery<P, DIM>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          SHAPE: Shape<P, DIM>{
+          LSHAPE: Shape<P, DIM>{
 
     // Does this query accept the given leaf?
-    fn accept_leaf(&self, leaf: &Leaf<P, DIM, SHAPE, T>) -> bool {
+    fn accept_leaf(&self, leaf: &Leaf<P, DIM, LSHAPE, T>) -> bool {
         match *self {
             MbrQuery::ContainedBy(ref query) => leaf.shape.contained_by_rect(query),
             MbrQuery::Overlaps(ref query) => leaf.shape.overlapped_by_rect(query),
@@ -43,7 +43,7 @@ impl<P, DIM, SHAPE, T> SpatialQuery<P, DIM, SHAPE, MbrNode<P, DIM, SHAPE, T>, T>
     }
 
     // Does this query accept the given level?
-    fn accept_level(&self, level: &MbrNode<P, DIM, SHAPE, T>) -> bool {
+    fn accept_level(&self, level: &MbrNode<P, DIM, LSHAPE, T>) -> bool {
         match *self {
             MbrQuery::ContainedBy(ref query) => level.overlapped_by_rect(query),
             MbrQuery::Overlaps(ref query) => level.overlapped_by_rect(query),
@@ -53,34 +53,34 @@ impl<P, DIM, SHAPE, T> SpatialQuery<P, DIM, SHAPE, MbrNode<P, DIM, SHAPE, T>, T>
 
 /// Level node of a tree. Either contains other levels or leaves
 #[derive(Debug)]
-pub enum MbrNode<P, DIM, SHAPE, T>
+pub enum MbrNode<P, DIM, LSHAPE, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     /// Contains only other levels
     Level {
         mbr: Rect<P, DIM>,
-        children: Vec<MbrNode<P, DIM, SHAPE, T>>,
+        children: Vec<MbrNode<P, DIM, LSHAPE, T>>,
     },
     /// Contains only leaves
     Leaves {
         mbr: Rect<P, DIM>,
-        children: Vec<Leaf<P, DIM, SHAPE, T>>,
+        children: Vec<Leaf<P, DIM, LSHAPE, T>>,
     },
 }
 
-impl<P, DIM, SHAPE, T> MbrNode<P, DIM, SHAPE, T>
+impl<P, DIM, LSHAPE, T> MbrNode<P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          SHAPE: Shape<P, DIM> {
+          LSHAPE: Shape<P, DIM> {
 
     /// Create an empty leaf level
-    pub fn new_leaves() -> MbrNode<P, DIM, SHAPE, T> {
+    pub fn new_leaves() -> MbrNode<P, DIM, LSHAPE, T> {
         MbrNode::Leaves{mbr: Rect::max_inverted(), children: Vec::new()}
     }
 
     /// Create an empty leaf level with no capacity for leaves.
     /// Only used for passing ownership of root into the index functions
-    fn new_no_alloc() -> MbrNode<P, DIM, SHAPE, T> {
+    fn new_no_alloc() -> MbrNode<P, DIM, LSHAPE, T> {
         MbrNode::Leaves{mbr: Rect::max_inverted(), children: Vec::with_capacity(0)}
     }
 
@@ -131,10 +131,10 @@ impl<P, DIM, SHAPE, T> MbrNode<P, DIM, SHAPE, T>
 }
 
 
-impl<P, DIM, SHAPE, T> Shape<P, DIM> for MbrNode<P, DIM, SHAPE, T>
+impl<P, DIM, LSHAPE, T> Shape<P, DIM> for MbrNode<P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          SHAPE: Shape<P, DIM> {
+          LSHAPE: Shape<P, DIM> {
 
     fn dim(&self) -> usize {
         self.mbr().dim()
@@ -174,43 +174,43 @@ impl<P, DIM, SHAPE, T> Shape<P, DIM> for MbrNode<P, DIM, SHAPE, T>
 }
 
 /// The generic container interface for spatial maps. Will, at the very least, be able to support R, R+, R*, and X trees
-pub struct MbrMap<P, DIM, SHAPE, I, R, T>
+pub struct MbrMap<P, DIM, LSHAPE, I, R, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
-          I: IndexInsert<P, DIM, SHAPE, T>,
-          R: IndexRemove<P, DIM, SHAPE, T, I>
+          I: IndexInsert<P, DIM, LSHAPE, T>,
+          R: IndexRemove<P, DIM, LSHAPE, T, I>
 {
     insert_index: I,
     remove_index: R,
-    root: MbrNode<P, DIM, SHAPE, T>,
+    root: MbrNode<P, DIM, LSHAPE, T>,
     len: usize,
 }
 
-impl<P, DIM, SHAPE, I, R, T> MbrMap<P, DIM, SHAPE, I, R, T>
+impl<P, DIM, LSHAPE, I, R, T> MbrMap<P, DIM, LSHAPE, I, R, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
-          SHAPE: Shape<P, DIM>,
-          I: IndexInsert<P, DIM, SHAPE, T>,
-          R: IndexRemove<P, DIM, SHAPE, T, I>,
+          LSHAPE: Shape<P, DIM>,
+          I: IndexInsert<P, DIM, LSHAPE, T>,
+          R: IndexRemove<P, DIM, LSHAPE, T, I>,
 {
 
     /// Create a new MbrMap with the given insert and remove indexes
-    pub fn new(insert_index: I, remove_index: R) -> MbrMap<P, DIM, SHAPE, I, R, T> {
+    pub fn new(insert_index: I, remove_index: R) -> MbrMap<P, DIM, LSHAPE, I, R, T> {
         MbrMap{insert_index: insert_index, remove_index: remove_index, root: MbrNode::new_leaves(), len: 0}
     }
 
     /// Insert an item
-    pub fn insert(&mut self, shape: SHAPE, item: T) {
+    pub fn insert(&mut self, shape: LSHAPE, item: T) {
         self.root = self.insert_index.insert_into_root(mem::replace(&mut self.root, MbrNode::new_no_alloc()), Leaf::new(shape, item));
         self.len += 1;
     }
 
     /// Remove all items whose shapes are accepted by the query
-    pub fn remove(&mut self, query: MbrQuery<P, DIM>) -> Vec<(SHAPE, T)> {
+    pub fn remove(&mut self, query: MbrQuery<P, DIM>) -> Vec<(LSHAPE, T)> {
         self.retain(query, |_| false)
     }
 
     /// Remove all items whose shapes are accepted by the query and where f(&T) returns false
-    pub fn retain<F: FnMut(&T) -> bool>(&mut self, query: MbrQuery<P, DIM>, f: F) -> Vec<(SHAPE, T)> {
+    pub fn retain<F: FnMut(&T) -> bool>(&mut self, query: MbrQuery<P, DIM>, f: F) -> Vec<(LSHAPE, T)> {
         let (new_root, removed) =
             self.remove_index.remove_from_root(mem::replace(&mut self.root, MbrNode::new_no_alloc()), &self.insert_index, query, f);
         self.len -= removed.len();
@@ -239,54 +239,54 @@ impl<P, DIM, SHAPE, I, R, T> MbrMap<P, DIM, SHAPE, I, R, T>
     }
 
     /// Iter for the map
-    pub fn iter(&self) -> Iter<P, DIM, SHAPE, T> {
+    pub fn iter(&self) -> Iter<P, DIM, LSHAPE, T> {
         Iter::new(MbrQuery::Overlaps(Rect::max()), &self.root)
     }
 
     /// IterMut for the map
-    pub fn iter_mut(&mut self) -> IterMut<P, DIM, SHAPE, T> {
+    pub fn iter_mut(&mut self) -> IterMut<P, DIM, LSHAPE, T> {
         IterMut::new(MbrQuery::Overlaps(Rect::max()), &mut self.root)
     }
 
     /// Iter for the map with a given query
-    pub fn iter_query(&self, query: MbrQuery<P, DIM>) -> Iter<P, DIM, SHAPE, T> {
+    pub fn iter_query(&self, query: MbrQuery<P, DIM>) -> Iter<P, DIM, LSHAPE, T> {
         Iter::new(query, &self.root)
     }
 
     /// IterMut for the map with a given query
-    pub fn iter_query_mut(&mut self, query: MbrQuery<P, DIM>) -> IterMut<P, DIM, SHAPE, T> {
+    pub fn iter_query_mut(&mut self, query: MbrQuery<P, DIM>) -> IterMut<P, DIM, LSHAPE, T> {
         IterMut::new(query, &mut self.root)
     }
 }
 
 /// Iter all `Leaf` items matching a query
-pub struct Iter<'tree, P, DIM, SHAPE, T>
+pub struct Iter<'tree, P, DIM, LSHAPE, T>
     where P: 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P, P)> + 'tree,
-          SHAPE: 'tree,
+          LSHAPE: 'tree,
           T: 'tree
 {
     query: Rc<MbrQuery<P, DIM>>,
-    level_iter: LevelIter<'tree, P, DIM, SHAPE, T>,
-    leaf_iter: Option<SliceIter<'tree, Leaf<P, DIM, SHAPE, T>>>,
+    level_iter: LevelIter<'tree, P, DIM, LSHAPE, T>,
+    leaf_iter: Option<SliceIter<'tree, Leaf<P, DIM, LSHAPE, T>>>,
     finished: bool,
 }
 
-impl<'tree, P, DIM, SHAPE, T> Iter<'tree, P, DIM, SHAPE, T>
+impl<'tree, P, DIM, LSHAPE, T> Iter<'tree, P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          SHAPE: Shape<P, DIM> + 'tree,
+          LSHAPE: Shape<P, DIM> + 'tree,
           T: 'tree
 {
     /// Constructor
-    fn new(query: MbrQuery<P, DIM>, root: &'tree MbrNode<P, DIM, SHAPE, T>) -> Iter<'tree, P, DIM, SHAPE, T> {
+    fn new(query: MbrQuery<P, DIM>, root: &'tree MbrNode<P, DIM, LSHAPE, T>) -> Iter<'tree, P, DIM, LSHAPE, T> {
         let rc_query = Rc::new(query);
         let level_iter = LevelIter::new(rc_query.clone(), root);
         Iter{query: rc_query, level_iter: level_iter, leaf_iter: None, finished: false}
     }
 
     /// Select the next matching leaf
-    fn next_leaf(&mut self, mut iter: SliceIter<'tree, Leaf<P, DIM, SHAPE, T>>) -> Option<(&'tree SHAPE, &'tree T)> {
+    fn next_leaf(&mut self, mut iter: SliceIter<'tree, Leaf<P, DIM, LSHAPE, T>>) -> Option<(&'tree LSHAPE, &'tree T)> {
         while let Some(ref mut leaf) = iter.next() {
                 if !self.query.accept_leaf(leaf) {
                     continue;
@@ -298,15 +298,15 @@ impl<'tree, P, DIM, SHAPE, T> Iter<'tree, P, DIM, SHAPE, T>
     }
 }
 
-impl<'tree, P, DIM, SHAPE, T> Iterator for Iter<'tree, P, DIM, SHAPE, T>
+impl<'tree, P, DIM, LSHAPE, T> Iterator for Iter<'tree, P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          SHAPE: Shape<P, DIM> + 'tree,
+          LSHAPE: Shape<P, DIM> + 'tree,
           T: 'tree
 {
-    type Item = (&'tree SHAPE, &'tree T);
+    type Item = (&'tree LSHAPE, &'tree T);
 
-    fn next(&mut self) -> Option<(&'tree SHAPE, &'tree T)> {
+    fn next(&mut self) -> Option<(&'tree LSHAPE, &'tree T)> {
         if self.finished {
             return None;
         }
@@ -333,26 +333,26 @@ impl<'tree, P, DIM, SHAPE, T> Iterator for Iter<'tree, P, DIM, SHAPE, T>
 }
 
 /// Iterate through all `MbrNode::Leaves` matching a query
-struct LevelIter<'tree, P, DIM, SHAPE, T>
+struct LevelIter<'tree, P, DIM, LSHAPE, T>
     where P: 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P, P)> + 'tree,
-          SHAPE: 'tree,
+          LSHAPE: 'tree,
           T: 'tree
 {
     query: Rc<MbrQuery<P, DIM>>,
-    root: &'tree MbrNode<P, DIM, SHAPE, T>,
-    level_stack: Vec<SliceIter<'tree, MbrNode<P, DIM, SHAPE, T>>>,
+    root: &'tree MbrNode<P, DIM, LSHAPE, T>,
+    level_stack: Vec<SliceIter<'tree, MbrNode<P, DIM, LSHAPE, T>>>,
     finished: bool,
 }
 
-impl<'tree, P, DIM, SHAPE, T> LevelIter<'tree, P, DIM, SHAPE, T>
+impl<'tree, P, DIM, LSHAPE, T> LevelIter<'tree, P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          SHAPE: Shape<P, DIM> + 'tree,
+          LSHAPE: Shape<P, DIM> + 'tree,
           T: 'tree {
     
     /// Constructor
-    fn new(query: Rc<MbrQuery<P, DIM>>, root: &'tree MbrNode<P, DIM, SHAPE, T>) -> LevelIter<'tree, P, DIM, SHAPE, T> {
+    fn new(query: Rc<MbrQuery<P, DIM>>, root: &'tree MbrNode<P, DIM, LSHAPE, T>) -> LevelIter<'tree, P, DIM, LSHAPE, T> {
         if root.is_empty() || !query.accept_level(root) {
             return LevelIter{query: query, root: root, level_stack: Vec::with_capacity(0), finished: true};
         }
@@ -360,7 +360,7 @@ impl<'tree, P, DIM, SHAPE, T> LevelIter<'tree, P, DIM, SHAPE, T>
     }
 
     /// Select the next matching leaves level
-    fn next_leaves(&mut self, mut m_iter: SliceIter<'tree, MbrNode<P, DIM, SHAPE, T>>) -> Option<SliceIter<'tree, Leaf<P, DIM, SHAPE, T>>> {
+    fn next_leaves(&mut self, mut m_iter: SliceIter<'tree, MbrNode<P, DIM, LSHAPE, T>>) -> Option<SliceIter<'tree, Leaf<P, DIM, LSHAPE, T>>> {
         let mut iter_node = m_iter.next();
         while let Some(node) = iter_node {
             if !self.query.accept_level(node) {
@@ -385,14 +385,14 @@ impl<'tree, P, DIM, SHAPE, T> LevelIter<'tree, P, DIM, SHAPE, T>
     }
 }
 
-impl<'tree, P, DIM, SHAPE, T> Iterator for LevelIter<'tree, P, DIM, SHAPE, T>
+impl<'tree, P, DIM, LSHAPE, T> Iterator for LevelIter<'tree, P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          SHAPE: Shape<P, DIM> + 'tree,
+          LSHAPE: Shape<P, DIM> + 'tree,
           T: 'tree {
-    type Item = SliceIter<'tree, Leaf<P, DIM, SHAPE, T>>;
+    type Item = SliceIter<'tree, Leaf<P, DIM, LSHAPE, T>>;
 
-    fn next(&mut self) -> Option<SliceIter<'tree, Leaf<P, DIM, SHAPE, T>>> {
+    fn next(&mut self) -> Option<SliceIter<'tree, Leaf<P, DIM, LSHAPE, T>>> {
         if self.finished {
             return None;
         }
@@ -423,33 +423,33 @@ impl<'tree, P, DIM, SHAPE, T> Iterator for LevelIter<'tree, P, DIM, SHAPE, T>
 }
 
 /// Mutably iterate all `Leaf` entries matching a query
-pub struct IterMut<'tree, P, DIM, SHAPE, T>
+pub struct IterMut<'tree, P, DIM, LSHAPE, T>
     where P: 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P, P)> + 'tree,
-          SHAPE: 'tree,
+          LSHAPE: 'tree,
           T: 'tree
 {
     query: Rc<MbrQuery<P, DIM>>,
-    level_iter: LevelIterMut<'tree, P, DIM, SHAPE, T>,
-    leaf_iter: Option<SliceIterMut<'tree, Leaf<P, DIM, SHAPE, T>>>,
+    level_iter: LevelIterMut<'tree, P, DIM, LSHAPE, T>,
+    leaf_iter: Option<SliceIterMut<'tree, Leaf<P, DIM, LSHAPE, T>>>,
     finished: bool,
 }
 
-impl<'tree, P, DIM, SHAPE, T> IterMut<'tree, P, DIM, SHAPE, T>
+impl<'tree, P, DIM, LSHAPE, T> IterMut<'tree, P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          SHAPE: Shape<P, DIM> + 'tree,
+          LSHAPE: Shape<P, DIM> + 'tree,
           T: 'tree
 {
     /// Constructor
-    fn new(query: MbrQuery<P, DIM>, root: &'tree mut MbrNode<P, DIM, SHAPE, T>) -> IterMut<'tree, P, DIM, SHAPE, T> {
+    fn new(query: MbrQuery<P, DIM>, root: &'tree mut MbrNode<P, DIM, LSHAPE, T>) -> IterMut<'tree, P, DIM, LSHAPE, T> {
         let rc_query = Rc::new(query);
         let level_iter = LevelIterMut::new(rc_query.clone(), root);
         IterMut{query: rc_query, level_iter: level_iter, leaf_iter: None, finished: false}
     }
 
     /// Select the next matching leaf
-    fn next_leaf(&mut self, mut iter: SliceIterMut<'tree, Leaf<P, DIM, SHAPE, T>>) -> Option<(&'tree SHAPE, &'tree mut T)> {
+    fn next_leaf(&mut self, mut iter: SliceIterMut<'tree, Leaf<P, DIM, LSHAPE, T>>) -> Option<(&'tree LSHAPE, &'tree mut T)> {
         while let Some(ref mut leaf) = iter.next() {
                 if !self.query.deref().accept_leaf(leaf) {
                     continue;
@@ -457,7 +457,7 @@ impl<'tree, P, DIM, SHAPE, T> IterMut<'tree, P, DIM, SHAPE, T>
                 self.leaf_iter = Some(iter);
                 // The lifetime checker doesn't understand that the leaf isn't going to be going anywhere. There must be a better way, though
                 let mut cast_leaf = unsafe {
-                    let cast_leaf: *mut Leaf<P, DIM, SHAPE, T> = *leaf;
+                    let cast_leaf: *mut Leaf<P, DIM, LSHAPE, T> = *leaf;
                     &mut *cast_leaf
                 };
                 return Some((&cast_leaf.shape, &mut cast_leaf.item));
@@ -466,15 +466,15 @@ impl<'tree, P, DIM, SHAPE, T> IterMut<'tree, P, DIM, SHAPE, T>
     }
 }
 
-impl<'tree, P, DIM, SHAPE, T> Iterator for IterMut<'tree, P, DIM, SHAPE, T>
+impl<'tree, P, DIM, LSHAPE, T> Iterator for IterMut<'tree, P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          SHAPE: Shape<P, DIM>,
+          LSHAPE: Shape<P, DIM>,
           T: 'tree
 {
-    type Item = (&'tree SHAPE, &'tree mut T);
+    type Item = (&'tree LSHAPE, &'tree mut T);
 
-    fn next(&mut self) -> Option<(&'tree SHAPE, &'tree mut T)> {
+    fn next(&mut self) -> Option<(&'tree LSHAPE, &'tree mut T)> {
         if self.finished {
             return None;
         }
@@ -501,26 +501,26 @@ impl<'tree, P, DIM, SHAPE, T> Iterator for IterMut<'tree, P, DIM, SHAPE, T>
 }
 
 /// Mutably iterate through all `MbrNode::Leaves` matching a query
-struct LevelIterMut<'tree, P, DIM, SHAPE, T>
+struct LevelIterMut<'tree, P, DIM, LSHAPE, T>
     where P: 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P, P)> + 'tree,
-          SHAPE: 'tree,
+          LSHAPE: 'tree,
           T: 'tree
 {
     query: Rc<MbrQuery<P, DIM>>,
-    root: &'tree mut MbrNode<P, DIM, SHAPE, T>,
-    level_stack: Vec<SliceIterMut<'tree, MbrNode<P, DIM, SHAPE, T>>>,
+    root: &'tree mut MbrNode<P, DIM, LSHAPE, T>,
+    level_stack: Vec<SliceIterMut<'tree, MbrNode<P, DIM, LSHAPE, T>>>,
     finished: bool,
 }
 
-impl<'tree, P, DIM, SHAPE, T> LevelIterMut<'tree, P, DIM, SHAPE, T>
+impl<'tree, P, DIM, LSHAPE, T> LevelIterMut<'tree, P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default +'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          SHAPE: Shape<P, DIM> + 'tree,
+          LSHAPE: Shape<P, DIM> + 'tree,
           T: 'tree {
 
     /// Constructor
-    fn new(query: Rc<MbrQuery<P, DIM>>, root: &'tree mut MbrNode<P, DIM, SHAPE, T>) -> LevelIterMut<'tree, P, DIM, SHAPE, T> {
+    fn new(query: Rc<MbrQuery<P, DIM>>, root: &'tree mut MbrNode<P, DIM, LSHAPE, T>) -> LevelIterMut<'tree, P, DIM, LSHAPE, T> {
         if root.is_empty() || !query.accept_level(root) {
             return LevelIterMut{query: query, root: root, level_stack: Vec::with_capacity(0), finished: true};
         }
@@ -529,13 +529,13 @@ impl<'tree, P, DIM, SHAPE, T> LevelIterMut<'tree, P, DIM, SHAPE, T>
 
     // access the root node. Must be unsafe because &'a mut self and &'tree mut self.root borrows cause a conflict
     // We're not modifying the tree structure, just the leaf nodes, so this should be ok
-    unsafe fn get_root_node(&mut self) -> &'tree mut MbrNode<P, DIM, SHAPE, T> {
-        let root: *mut MbrNode<P, DIM, SHAPE, T> = self.root;
+    unsafe fn get_root_node(&mut self) -> &'tree mut MbrNode<P, DIM, LSHAPE, T> {
+        let root: *mut MbrNode<P, DIM, LSHAPE, T> = self.root;
         &mut *root
     }
 
     /// Select the next matching leaves level
-    fn next_leaves(&mut self, mut m_iter: SliceIterMut<'tree, MbrNode<P, DIM, SHAPE, T>>) -> Option<SliceIterMut<'tree, Leaf<P, DIM, SHAPE, T>>> {
+    fn next_leaves(&mut self, mut m_iter: SliceIterMut<'tree, MbrNode<P, DIM, LSHAPE, T>>) -> Option<SliceIterMut<'tree, Leaf<P, DIM, LSHAPE, T>>> {
         let mut iter_node = m_iter.next();
         while let Some(node) = iter_node {
             if !self.query.accept_level(node) {
@@ -561,14 +561,14 @@ impl<'tree, P, DIM, SHAPE, T> LevelIterMut<'tree, P, DIM, SHAPE, T>
 }
 
 
-impl<'tree, P, DIM, SHAPE, T> Iterator for LevelIterMut<'tree, P, DIM, SHAPE, T>
+impl<'tree, P, DIM, LSHAPE, T> Iterator for LevelIterMut<'tree, P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          SHAPE: Shape<P, DIM>,
+          LSHAPE: Shape<P, DIM>,
           T: 'tree {
-    type Item = SliceIterMut<'tree, Leaf<P, DIM, SHAPE, T>>;
+    type Item = SliceIterMut<'tree, Leaf<P, DIM, LSHAPE, T>>;
 
-    fn next(&mut self) -> Option<SliceIterMut<'tree, Leaf<P, DIM, SHAPE, T>>> {
+    fn next(&mut self) -> Option<SliceIterMut<'tree, Leaf<P, DIM, LSHAPE, T>>> {
         if self.finished {
             return None;
         }

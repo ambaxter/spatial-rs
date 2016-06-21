@@ -20,24 +20,24 @@ use std::marker::PhantomData;
 const AT_ROOT: bool = true;
 const NOT_AT_ROOT: bool = false;
 
-pub struct RRemove<P, DIM, SHAPE, MIN, T>
+pub struct RRemove<P, DIM, LSHAPE, MIN, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
           MIN: Unsigned
 {
     _p: PhantomData<P>,
     _dim: PhantomData<DIM>,
-    _shape: PhantomData<SHAPE>,
+    _shape: PhantomData<LSHAPE>,
     _min: PhantomData<MIN>,
     _t: PhantomData<T>,
 }
 
-impl<P, DIM, SHAPE, MIN, T> RRemove<P, DIM, SHAPE, MIN, T>
+impl<P, DIM, LSHAPE, MIN, T> RRemove<P, DIM, LSHAPE, MIN, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)>,
-        SHAPE: Shape<P, DIM>,
+        LSHAPE: Shape<P, DIM>,
         MIN: Unsigned
 {
-    pub fn new() -> RRemove<P, DIM, SHAPE, MIN, T> {
+    pub fn new() -> RRemove<P, DIM, LSHAPE, MIN, T> {
         RRemove{
             _dim: PhantomData,
             _p: PhantomData,
@@ -48,9 +48,9 @@ impl<P, DIM, SHAPE, MIN, T> RRemove<P, DIM, SHAPE, MIN, T>
     }
 
     /// Removes matching leaves from a leaf level. Return true if the level should be retianed
-    fn remove_matching_leaves<F: FnMut(&T) -> bool>(&self, query: &MbrQuery<P, DIM>, mbr: &mut Rect<P, DIM>, children: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
-        removed: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
-        to_reinsert: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
+    fn remove_matching_leaves<F: FnMut(&T) -> bool>(&self, query: &MbrQuery<P, DIM>, mbr: &mut Rect<P, DIM>, children: &mut Vec<Leaf<P, DIM, LSHAPE, T>>,
+        removed: &mut Vec<Leaf<P, DIM, LSHAPE, T>>,
+        to_reinsert: &mut Vec<Leaf<P, DIM, LSHAPE, T>>,
         f: &mut F,
         at_root: bool) -> bool {
 
@@ -71,7 +71,7 @@ impl<P, DIM, SHAPE, MIN, T> RRemove<P, DIM, SHAPE, MIN, T>
     }
 
     /// Consume all child leaves and queue them for reinsert
-    fn consume_leaves_for_reinsert(&self, children: &mut Vec<MbrNode<P, DIM, SHAPE, T>>, to_reinsert: &mut Vec<Leaf<P, DIM, SHAPE, T>>) {
+    fn consume_leaves_for_reinsert(&self, children: &mut Vec<MbrNode<P, DIM, LSHAPE, T>>, to_reinsert: &mut Vec<Leaf<P, DIM, LSHAPE, T>>) {
         for ref mut child in children {
             match **child {
                 MbrNode::Leaves{ref mut children, ..} => to_reinsert.append(children),
@@ -81,9 +81,9 @@ impl<P, DIM, SHAPE, MIN, T> RRemove<P, DIM, SHAPE, MIN, T>
     }
 
     /// Recursively remove leaves from a level. Return true if the level should be retianed
-    fn remove_leaves_from_level<F: FnMut(&T) -> bool>(&self, query: &MbrQuery<P, DIM>, level: &mut MbrNode<P, DIM, SHAPE, T>,
-        removed: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
-        to_reinsert: &mut Vec<Leaf<P, DIM, SHAPE, T>>,
+    fn remove_leaves_from_level<F: FnMut(&T) -> bool>(&self, query: &MbrQuery<P, DIM>, level: &mut MbrNode<P, DIM, LSHAPE, T>,
+        removed: &mut Vec<Leaf<P, DIM, LSHAPE, T>>,
+        to_reinsert: &mut Vec<Leaf<P, DIM, LSHAPE, T>>,
         f: &mut F,
         at_root: bool) -> bool {
             if !query.accept_level(level) {
@@ -112,18 +112,18 @@ impl<P, DIM, SHAPE, MIN, T> RRemove<P, DIM, SHAPE, MIN, T>
 }
 
 
-impl<P, DIM, SHAPE, MIN, T, I> IndexRemove<P, DIM, SHAPE, T, I> for RRemove<P, DIM, SHAPE, MIN, T>
+impl<P, DIM, LSHAPE, MIN, T, I> IndexRemove<P, DIM, LSHAPE, T, I> for RRemove<P, DIM, LSHAPE, MIN, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
-        SHAPE: Shape<P, DIM>,
-        I: IndexInsert<P, DIM, SHAPE, T>,
+        LSHAPE: Shape<P, DIM>,
+        I: IndexInsert<P, DIM, LSHAPE, T>,
         MIN: Unsigned
 {
     fn remove_from_root<F: FnMut(&T) -> bool>(&self,
-        mut root: MbrNode<P, DIM, SHAPE, T>,
+        mut root: MbrNode<P, DIM, LSHAPE, T>,
         insert_index: &I,
         query: MbrQuery<P, DIM>,
-        mut f: F) -> (MbrNode<P, DIM, SHAPE, T>, Vec<Leaf<P, DIM, SHAPE, T>>) {
+        mut f: F) -> (MbrNode<P, DIM, LSHAPE, T>, Vec<Leaf<P, DIM, LSHAPE, T>>) {
 
             if root.is_empty() {
                 (root, Vec::with_capacity(0))
