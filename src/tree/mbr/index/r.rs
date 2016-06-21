@@ -16,6 +16,9 @@ use tree::mbr::{MbrNode, MbrQuery};
 use tree::{Leaf, SpatialQuery};
 use tree::mbr::index::{IndexInsert, IndexRemove};
 use std::marker::PhantomData;
+use parking_lot::RwLock;
+use vecext::{PackRwLocks, UnpackRwLocks};
+use std::mem;
 
 const AT_ROOT: bool = true;
 const NOT_AT_ROOT: bool = false;
@@ -48,25 +51,33 @@ impl<P, DIM, LSHAPE, MIN, T> RRemove<P, DIM, LSHAPE, MIN, T>
     }
 
     /// Removes matching leaves from a leaf level. Return true if the level should be retianed
-    fn remove_matching_leaves<F: FnMut(&T) -> bool>(&self, query: &MbrQuery<P, DIM>, mbr: &mut Rect<P, DIM>, children: &mut Vec<Leaf<P, DIM, LSHAPE, T>>,
+    fn remove_matching_leaves<F: FnMut(&T) -> bool>(&self, query: &MbrQuery<P, DIM>, mbr: &mut Rect<P, DIM>, children: &mut Vec<RwLock<Leaf<P, DIM, LSHAPE, T>>>,
         removed: &mut Vec<Leaf<P, DIM, LSHAPE, T>>,
         to_reinsert: &mut Vec<Leaf<P, DIM, LSHAPE, T>>,
         f: &mut F,
         at_root: bool) -> bool {
 
+        // unpack all children from the RwLock
+        let mut leaf_children = mem::replace(children, Vec::with_capacity(0))
+            .unpack_rwlocks();
+
         let orig_len = children.len();
-        children.retain_and_append(removed, |leaf| !query.accept_leaf(leaf) || f(&leaf.item));
+        leaf_children.retain_and_append(removed, |leaf| !query.accept_leaf(leaf) || f(&leaf.item));
         let children_removed = orig_len != children.len();
         if children.len() < MIN::to_usize() && !at_root {
-            to_reinsert.append(children);
+            to_reinsert.append(&mut leaf_children);
             return false;
         }
         if children_removed {
             *mbr = Rect::max_inverted();
             for child in &*children {
-               child.expand_rect_to_fit(mbr);
+               child.read().expand_rect_to_fit(mbr);
             }
         }
+
+        // repack non-removed children
+        *children = leaf_children.pack_rwlocks();
+
         true
     }
 
@@ -74,7 +85,7 @@ impl<P, DIM, LSHAPE, MIN, T> RRemove<P, DIM, LSHAPE, MIN, T>
     fn consume_leaves_for_reinsert(&self, children: &mut Vec<MbrNode<P, DIM, LSHAPE, T>>, to_reinsert: &mut Vec<Leaf<P, DIM, LSHAPE, T>>) {
         for ref mut child in children {
             match **child {
-                MbrNode::Leaves{ref mut children, ..} => to_reinsert.append(children),
+                MbrNode::Leaves{ref mut children, ..} => to_reinsert.append(&mut mem::replace(children, Vec::with_capacity(0)).unpack_rwlocks()),
                 MbrNode::Level{ref mut children, ..} => self.consume_leaves_for_reinsert(children, to_reinsert)
             }
         }

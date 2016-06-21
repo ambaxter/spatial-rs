@@ -17,6 +17,9 @@ use ordered_float::NotNaN;
 use std::cmp;
 use typenum::Unsigned;
 use generic_array::ArrayLength;
+use std::mem;
+use parking_lot::RwLock;
+use vecext::{PackRwLocks, UnpackRwLocks};
 
 const AT_ROOT: bool = true;
 const NOT_AT_ROOT: bool = false;
@@ -153,16 +156,16 @@ impl<P, DIM, LSHAPE, MIN, MAX, T> RStarInsert<P, DIM, LSHAPE, MIN, MAX, T>
         level.iter_mut().min_by_key(|a| self.area_cost(a.mbr(), leaf)).unwrap()
     }
 
-    fn split_for_reinsert(&self, mbr: &mut Rect<P, DIM>, children: &mut Vec<Leaf<P, DIM, LSHAPE, T>>) -> Vec<Leaf<P, DIM, LSHAPE, T>> {
+    fn split_for_reinsert(&self, mbr: &mut Rect<P, DIM>, children: &mut Vec<RwLock<Leaf<P, DIM, LSHAPE, T>>>) -> Vec<Leaf<P, DIM, LSHAPE, T>> {
         // RI1 & RI2
-        children.sort_by_key(|a| NotNaN::from(a.distance_from_rect_center(mbr)));
+        children.sort_by_key(|a| NotNaN::from(a.read().distance_from_rect_center(mbr)));
         //RI3
         let split = children.split_off(self.reinsert_m);
         *mbr = Rect::max_inverted();
         for child in children {
-            child.expand_rect_to_fit(mbr);
+            child.read().expand_rect_to_fit(mbr);
         }
-        split
+        split.into_iter().map(|leaf| leaf.into_inner() ).collect()
     }
 
     fn insert_into_level(&self, level: &mut MbrNode<P, DIM, LSHAPE, T>, leaf: Leaf<P, DIM, LSHAPE, T>, at_root: bool, force_split: bool) -> InsertResult<P, DIM, LSHAPE, T> {
@@ -171,7 +174,7 @@ impl<P, DIM, LSHAPE, MIN, MAX, T> RStarInsert<P, DIM, LSHAPE, MIN, MAX, T>
         match *level {
             //I2
             MbrNode::Leaves{ref mut children, ..} => {
-                children.push(leaf);
+                children.push(RwLock::new(leaf));
             },
             //I1
             MbrNode::Level{ref mut mbr, ref mut children} => {
@@ -284,8 +287,17 @@ impl<P, DIM, LSHAPE, MIN, MAX, T> RStarInsert<P, DIM, LSHAPE, MIN, MAX, T>
         }
         match *level {
                 MbrNode::Leaves{ref mut mbr, ref mut children} => {
-                    let (split_mbr, split_children) = self.split(mbr, children);
-                    InsertResult::Split(MbrNode::Leaves{mbr: split_mbr, children: split_children})
+                    // unpack all children from the RwLock
+                    let mut leaf_children = mem::replace(children, Vec::with_capacity(0))
+                        .unpack_rwlocks();
+
+                    // Split
+                    let (split_mbr, split_children) = self.split(mbr, &mut leaf_children);
+
+                    // repack non-split children
+                    *children = leaf_children.pack_rwlocks();
+
+                    InsertResult::Split(MbrNode::Leaves{mbr: split_mbr, children: split_children.pack_rwlocks()})
                 },
                 MbrNode::Level{ref mut mbr, ref mut children} => {
                     let (split_mbr, split_children) = self.split(mbr, children);

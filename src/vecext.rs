@@ -5,6 +5,8 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
+use parking_lot::RwLock;
+
 trait RetainPart<T, F>
     where F: FnMut(&T) -> bool
 {
@@ -118,6 +120,33 @@ impl<T, F> RetainMut<T, F> for Vec<T>
     }
 }
 
+pub trait UnpackRwLocks<T>
+{
+    fn unpack_rwlocks(self) -> Vec<T>;
+}
+
+impl<T> UnpackRwLocks<T> for Vec<RwLock<T>> 
+{
+    fn unpack_rwlocks(self) -> Vec<T> {
+        self.into_iter()
+        .map(|item| item.into_inner())
+        .collect()
+    }
+}
+
+pub trait PackRwLocks<T>
+{
+    fn pack_rwlocks(self) -> Vec<RwLock<T>>;
+}
+
+impl<T> PackRwLocks<T> for Vec<T> 
+{
+    fn pack_rwlocks(self) -> Vec<RwLock<T>> {
+        self.into_iter()
+        .map(|item| RwLock::new(item))
+        .collect()
+    }
+}
 
 #[cfg(test)]
 mod tests {

@@ -11,6 +11,7 @@
 extern crate ordered_float;
 extern crate num;
 extern crate typenum;
+extern crate parking_lot;
 
 #[cfg(test)]
 #[macro_use]
