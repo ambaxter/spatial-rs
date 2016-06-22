@@ -25,7 +25,8 @@ mod vecext;
 
 use tree::mbr::index::r::RRemove;
 use tree::mbr::index::rstar::RStarInsert;
-pub use tree::mbr::{MbrMap, MbrQuery};
+use tree::mbr::MbrMap;
+pub use tree::mbr::MbrQuery;
 use generic_array::ArrayLength;
 pub use shapes::{Shape, Shapes, Point, LineSegment, Rect};
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
@@ -42,18 +43,21 @@ pub struct RStar<P, DIM, LSHAPE, T> {
     _t: PhantomData<T>,
 }
 
+/// An R* Tree
+pub type RStarTree<P, DIM, LSHAPE, T> =  MbrMap<P, DIM, LSHAPE, RStarInsert<P, DIM, LSHAPE, T>, RRemove<P, DIM, LSHAPE, T>, T>;
+
 impl<P, DIM, LSHAPE, T> RStar<P, DIM, LSHAPE, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
           LSHAPE: Shape<P, DIM>,
 {
-/// Create a new R* tree with min and max children lengths set to 32 and 64, respectively
-    pub fn new() -> MbrMap<P, DIM, LSHAPE, RStarInsert<P, DIM, LSHAPE, T>, RRemove<P, DIM, LSHAPE, T>, T> {
+/// Create a new R* tree with min and max children lengths set to 25 and 64, respectively
+    pub fn new() -> RStarTree<P, DIM, LSHAPE, T> {
         MbrMap::new(RStarInsert::new(), RRemove::new())
     }
 
 /// Create a new R* tree with min and max children lengths as provided
-    pub fn new_with_limits(min: usize, max: usize) -> MbrMap<P, DIM, LSHAPE, RStarInsert<P, DIM, LSHAPE, T>, RRemove<P, DIM, LSHAPE, T>, T> {
+    pub fn new_with_limits(min: usize, max: usize) -> RStarTree<P, DIM, LSHAPE, T> {
         MbrMap::new(RStarInsert::new_with_limits(min, max), RRemove::with_limits(min))
     }
 }

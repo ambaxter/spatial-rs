@@ -261,6 +261,8 @@ impl<P, DIM, LSHAPE, I, R, T> MbrMap<P, DIM, LSHAPE, I, R, T>
 
 }
 
+type LeafIter<'tree, P, DIM, LSHAPE, T> = SliceIter<'tree, RwLock<Leaf<P, DIM, LSHAPE, T>>>;
+
 /// Iterate through all `MbrNode::Leaves` matching a query
 struct LevelIter<'tree, P, DIM, LSHAPE, T>
     where P: 'tree,
@@ -289,7 +291,7 @@ impl<'tree, P, DIM, LSHAPE, T> LevelIter<'tree, P, DIM, LSHAPE, T>
     }
 
 /// Select the next matching leaves level
-    fn next_leaves(&mut self, mut m_iter: SliceIter<'tree, MbrNode<P, DIM, LSHAPE, T>>) -> Option<SliceIter<'tree, RwLock<Leaf<P, DIM, LSHAPE, T>>>> {
+    fn next_leaves(&mut self, mut m_iter: SliceIter<'tree, MbrNode<P, DIM, LSHAPE, T>>) -> Option<LeafIter<'tree, P, DIM, LSHAPE, T>> {
         let mut iter_node = m_iter.next();
         while let Some(node) = iter_node {
             if !self.query.accept_level(node) {
@@ -319,9 +321,9 @@ impl<'tree, P, DIM, LSHAPE, T> Iterator for LevelIter<'tree, P, DIM, LSHAPE, T>
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
           LSHAPE: Shape<P, DIM> + 'tree,
           T: 'tree {
-    type Item = SliceIter<'tree, RwLock<Leaf<P, DIM, LSHAPE, T>>>;
+    type Item = LeafIter<'tree, P, DIM, LSHAPE, T>;
 
-    fn next(&mut self) -> Option<SliceIter<'tree, RwLock<Leaf<P, DIM, LSHAPE, T>>>> {
+    fn next(&mut self) -> Option<LeafIter<'tree, P, DIM, LSHAPE, T>> {
         if self.finished {
             return None;
         }
@@ -360,7 +362,7 @@ pub struct Iter<'tree, P, DIM, LSHAPE, T>
 {
     query: Rc<MbrQuery<P, DIM>>,
     level_iter: LevelIter<'tree, P, DIM, LSHAPE, T>,
-    leaf_iter: Option<SliceIter<'tree, RwLock<Leaf<P, DIM, LSHAPE, T>>>>,
+    leaf_iter: Option<LeafIter<'tree, P, DIM, LSHAPE, T>>,
     leaf_lock: Option<RwLockReadGuard<'tree, Leaf<P, DIM, LSHAPE, T>>>,
     finished: bool,
 }
@@ -443,7 +445,7 @@ pub struct IterMut<'tree, P, DIM, LSHAPE, T>
 {
     query: Rc<MbrQuery<P, DIM>>,
     level_iter: LevelIter<'tree, P, DIM, LSHAPE, T>,
-    leaf_iter: Option<SliceIter<'tree, RwLock<Leaf<P, DIM, LSHAPE, T>>>>,
+    leaf_iter: Option<LeafIter<'tree, P, DIM, LSHAPE, T>>,
     leaf_lock: Option<RwLockWriteGuard<'tree, Leaf<P, DIM, LSHAPE, T>>>,
     finished: bool,
 }

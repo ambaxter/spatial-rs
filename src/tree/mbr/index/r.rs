@@ -13,7 +13,7 @@ use std::fmt::Debug;
 use generic_array::ArrayLength;
 use tree::mbr::{MbrNode, MbrQuery};
 use tree::{Leaf, SpatialQuery};
-use tree::mbr::index::{IndexInsert, IndexRemove, D_MIN, AT_ROOT, NOT_AT_ROOT};
+use tree::mbr::index::{IndexInsert, IndexRemove, RemoveReturn, D_MIN, AT_ROOT, NOT_AT_ROOT};
 use std::marker::PhantomData;
 use parking_lot::RwLock;
 use vecext::{PackRwLocks, UnpackRwLocks};
@@ -131,7 +131,7 @@ impl<P, DIM, LSHAPE, T, I> IndexRemove<P, DIM, LSHAPE, T, I> for RRemove<P, DIM,
         mut root: MbrNode<P, DIM, LSHAPE, T>,
         insert_index: &I,
         query: MbrQuery<P, DIM>,
-        mut f: F) -> (MbrNode<P, DIM, LSHAPE, T>, Vec<Leaf<P, DIM, LSHAPE, T>>) {
+        mut f: F) -> RemoveReturn<P, DIM, LSHAPE, T> {
 
             if root.is_empty() {
                 (root, Vec::with_capacity(0))

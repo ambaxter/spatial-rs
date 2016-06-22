@@ -11,7 +11,7 @@ use tree::Leaf;
 pub mod rstar;
 pub mod r;
 
-pub const D_MIN: usize = 32;
+pub const D_MIN: usize = 25;
 pub const D_MAX: usize = 64;
 const AT_ROOT: bool = true;
 const NOT_AT_ROOT: bool = false;
@@ -28,6 +28,8 @@ pub trait IndexInsert<P, DIM, LSHAPE, T>
                         -> MbrNode<P, DIM, LSHAPE, T>;
 }
 
+pub type RemoveReturn<P, DIM, LSHAPE, T> = (MbrNode<P, DIM, LSHAPE, T>, Vec<Leaf<P, DIM, LSHAPE, T>>);
+
 /// Remove entries from the tree that match the query, but not the retain function f.
 pub trait IndexRemove<P, DIM, LSHAPE, T, I>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
@@ -39,5 +41,5 @@ pub trait IndexRemove<P, DIM, LSHAPE, T, I>
          insert_index: &I,
          query: MbrQuery<P, DIM>,
          mut f: F)
-         -> (MbrNode<P, DIM, LSHAPE, T>, Vec<Leaf<P, DIM, LSHAPE, T>>);
+         -> RemoveReturn<P, DIM, LSHAPE, T>;
 }
