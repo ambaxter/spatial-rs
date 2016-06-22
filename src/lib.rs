@@ -23,6 +23,7 @@ mod shapes;
 mod tree;
 mod vecext;
 
+use tree::mbr::index::IndexInsert;
 use tree::mbr::index::r::RRemove;
 use tree::mbr::index::rstar::RStarInsert;
 use tree::mbr::MbrMap;
@@ -53,12 +54,22 @@ impl<P, DIM, LSHAPE, T> RStar<P, DIM, LSHAPE, T>
 {
 /// Create a new R* tree with min and max children lengths set to 25 and 64, respectively
     pub fn new() -> RStarTree<P, DIM, LSHAPE, T> {
-        MbrMap::new(RStarInsert::new(), RRemove::new())
+        RStar::map_from_insert(RStarInsert::new())
     }
 
-/// Create a new R* tree with min and max children lengths as provided
-    pub fn new_with_limits(min: usize, max: usize) -> RStarTree<P, DIM, LSHAPE, T> {
-        MbrMap::new(RStarInsert::new_with_limits(min, max), RRemove::with_limits(min))
+/// Create a new R* tree with max children lengths as provided. min length will be set to 0.3 * max
+    pub fn new_with_max(max: usize) -> RStarTree<P, DIM, LSHAPE, T> {
+        RStar::map_from_insert(RStarInsert::new_with_max(max))
+    }
+
+/// Creates a mew R* tree with options as provided. min children will be set to reinsert_p.min(split_p) * max
+    pub fn new_with_options(max: usize, reinsert_p: f32, split_p: f32, choose_subtree_p: usize) -> RStarTree<P, DIM, LSHAPE, T> {
+        RStar::map_from_insert(RStarInsert::new_with_options(max, reinsert_p, split_p, choose_subtree_p))
+    }
+
+    fn map_from_insert(rstar_insert: RStarInsert<P, DIM, LSHAPE, T>) -> RStarTree<P, DIM, LSHAPE, T> {
+        let min = rstar_insert.preferred_min();
+        MbrMap::new(rstar_insert, RRemove::with_min(min))
     }
 }
 

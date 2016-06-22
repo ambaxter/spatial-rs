@@ -13,7 +13,7 @@ use std::fmt::Debug;
 use generic_array::ArrayLength;
 use tree::mbr::{MbrNode, MbrQuery};
 use tree::{Leaf, SpatialQuery};
-use tree::mbr::index::{IndexInsert, IndexRemove, RemoveReturn, D_MIN, AT_ROOT, NOT_AT_ROOT};
+use tree::mbr::index::{IndexInsert, IndexRemove, RemoveReturn, AT_ROOT, NOT_AT_ROOT};
 use std::marker::PhantomData;
 use parking_lot::RwLock;
 use vecext::{PackRwLocks, UnpackRwLocks};
@@ -34,11 +34,8 @@ impl<P, DIM, LSHAPE, T> RRemove<P, DIM, LSHAPE, T>
         DIM: ArrayLength<P> + ArrayLength<(P, P)>,
         LSHAPE: Shape<P, DIM>,
 {
-    pub fn new() -> RRemove<P, DIM, LSHAPE, T> {
-        RRemove::with_limits(D_MIN)
-    }
 
-    pub fn with_limits(min: usize) -> RRemove<P, DIM, LSHAPE, T> {
+    pub fn with_min(min: usize) -> RRemove<P, DIM, LSHAPE, T> {
         assert!(min > 0, "min({:?}) must be at least 0.", min);
         RRemove{
             min: min,

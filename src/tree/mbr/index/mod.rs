@@ -11,7 +11,6 @@ use tree::Leaf;
 pub mod rstar;
 pub mod r;
 
-pub const D_MIN: usize = 25;
 pub const D_MAX: usize = 64;
 const AT_ROOT: bool = true;
 const NOT_AT_ROOT: bool = false;
@@ -26,6 +25,8 @@ pub trait IndexInsert<P, DIM, LSHAPE, T>
                         mut root: MbrNode<P, DIM, LSHAPE, T>,
                         leaf: Leaf<P, DIM, LSHAPE, T>)
                         -> MbrNode<P, DIM, LSHAPE, T>;
+    
+    fn preferred_min(&self) -> usize;
 }
 
 pub type RemoveReturn<P, DIM, LSHAPE, T> = (MbrNode<P, DIM, LSHAPE, T>, Vec<Leaf<P, DIM, LSHAPE, T>>);

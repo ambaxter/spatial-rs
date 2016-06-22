@@ -9,12 +9,13 @@ use num::{Zero, Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign, Range, Deref};
 use tree::mbr::MbrNode;
 use tree::Leaf;
-use tree::mbr::index::{IndexInsert, D_MIN, D_MAX, AT_ROOT, NOT_AT_ROOT, FORCE_SPLIT, DONT_FORCE_SPLIT};
+use tree::mbr::index::{IndexInsert, D_MAX, AT_ROOT, NOT_AT_ROOT, FORCE_SPLIT, DONT_FORCE_SPLIT};
 use shapes::{Shape, Rect};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use ordered_float::NotNaN;
 use std::cmp;
+use std::f32;
 use generic_array::ArrayLength;
 use std::mem;
 use parking_lot::RwLock;
@@ -65,6 +66,7 @@ pub struct RStarInsert<P, DIM, LSHAPE, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     max: usize,
+    preferred_min: usize,
     reinsert_m: usize,
     choose_subtree_p: usize,
     min_k: usize,
@@ -83,20 +85,19 @@ impl<P, DIM, LSHAPE, T> RStarInsert<P, DIM, LSHAPE, T>
 {
 
     pub fn new() -> RStarInsert<P, DIM, LSHAPE, T> {
-        RStarInsert::new_with_options(D_MIN, D_MAX, D_REINSERT_P, D_SPLIT_P, D_CHOOSE_SUBTREE_P)
+        RStarInsert::new_with_options(D_MAX, D_REINSERT_P, D_SPLIT_P, D_CHOOSE_SUBTREE_P)
     }
 
-    pub fn new_with_limits(min: usize, max: usize) -> RStarInsert<P, DIM, LSHAPE, T> {
-        RStarInsert::new_with_options(min, max, D_REINSERT_P, D_SPLIT_P, D_CHOOSE_SUBTREE_P)
+    pub fn new_with_max(max: usize) -> RStarInsert<P, DIM, LSHAPE, T> {
+        RStarInsert::new_with_options(max, D_REINSERT_P, D_SPLIT_P, D_CHOOSE_SUBTREE_P)
     }
 
-    pub fn new_with_options(min: usize, max: usize, reinsert_p: f32, split_p: f32, choose_subtree_p: usize) -> RStarInsert<P, DIM, LSHAPE, T> {
-        assert!(min > 0, "min({:?}) must be at least 0.", min);
-        assert!(max > min, "max({:?}) must be greater than min({:?})", max, min);
+    pub fn new_with_options(max: usize, reinsert_p: f32, split_p: f32, choose_subtree_p: usize) -> RStarInsert<P, DIM, LSHAPE, T> {
+        let preferred_min = cmp::max((max as f32 * reinsert_p.min(split_p)) as usize, 1);
+        let reinsert_size = cmp::max((max as f32 * reinsert_p) as usize, 1);
+        let reinsert_m = max - reinsert_size;
 
-        let reinsert_m = max - cmp::max((max as f32 * reinsert_p) as usize, 1);
-
-        let min_k = cmp::max((max as f32 * split_p) as usize, min);
+        let min_k = cmp::max((max as f32 * split_p) as usize, 1);
         let max_k = cmp::max(max - (2 * min_k) + 1, min_k + 1);
 // On max_k==min_k, the iterator in split is a no-op and vec splits occur at index 0. Happens with M - 2m + 1 and M - 2m + 2 for various small Ms.
 // The above line should prevent this, but assert in case code changes
@@ -104,6 +105,7 @@ impl<P, DIM, LSHAPE, T> RStarInsert<P, DIM, LSHAPE, T>
         assert!(max > max_k, "max({:?}) must be greater than max_k({:?})", max, max_k);
         RStarInsert{
             max: max,
+            preferred_min: preferred_min,
             reinsert_m: reinsert_m,
             choose_subtree_p: choose_subtree_p,
             min_k: min_k,
@@ -340,6 +342,10 @@ impl<P, DIM, LSHAPE, T> IndexInsert<P, DIM, LSHAPE, T> for RStarInsert<P, DIM, L
             }
             _ => root
         }
+    }
+
+    fn preferred_min(&self) -> usize {
+        self.preferred_min
     }
 }
 

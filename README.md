@@ -23,6 +23,8 @@ The march to 0.1.0:
 - [ ] Macro so users can create their own Shapes enum
 - [ ] Move the tree iterator code into macros?
 - [ ] R-Tree, R+Tree: implement, document, test, and benchmark
+- [ ] Performance improvement: Remove UnpackRwLocks and PackRwLocks requirement
+- [ ] Performance improvement: Use lifeguard with MbrNode
 
 0.3.0:
 - [ ] Inevitable bug fixes
