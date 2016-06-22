@@ -11,6 +11,13 @@ use tree::Leaf;
 pub mod rstar;
 pub mod r;
 
+pub const D_MIN: usize = 32;
+pub const D_MAX: usize = 64;
+const AT_ROOT: bool = true;
+const NOT_AT_ROOT: bool = false;
+const FORCE_SPLIT: bool = true;
+const DONT_FORCE_SPLIT: bool = false;
+
 /// Insert the leaf into the root
 pub trait IndexInsert<P, DIM, LSHAPE, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>

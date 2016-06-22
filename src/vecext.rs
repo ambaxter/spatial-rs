@@ -120,31 +120,27 @@ impl<T, F> RetainMut<T, F> for Vec<T>
     }
 }
 
-pub trait UnpackRwLocks<T>
-{
+pub trait UnpackRwLocks<T> {
     fn unpack_rwlocks(self) -> Vec<T>;
 }
 
-impl<T> UnpackRwLocks<T> for Vec<RwLock<T>> 
-{
+impl<T> UnpackRwLocks<T> for Vec<RwLock<T>> {
     fn unpack_rwlocks(self) -> Vec<T> {
         self.into_iter()
-        .map(|item| item.into_inner())
-        .collect()
+            .map(|item| item.into_inner())
+            .collect()
     }
 }
 
-pub trait PackRwLocks<T>
-{
+pub trait PackRwLocks<T> {
     fn pack_rwlocks(self) -> Vec<RwLock<T>>;
 }
 
-impl<T> PackRwLocks<T> for Vec<T> 
-{
+impl<T> PackRwLocks<T> for Vec<T> {
     fn pack_rwlocks(self) -> Vec<RwLock<T>> {
         self.into_iter()
-        .map(|item| RwLock::new(item))
-        .collect()
+            .map(RwLock::new)
+            .collect()
     }
 }
 

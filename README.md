@@ -10,11 +10,11 @@ The march to 0.1.0:
 - [x] For remove and retain, do users even need their leaves back?
 - [x] Make Rect::margin a trait
 - [x] Split SpatialMapQuery trait and RectQuery
-- [ ] Document tree, index, index::r and index::rstar
-- [ ] Doc-tests for tree, index, index::r and index::rstar
-- [ ] Tests for tree, index, index::r and index::rstar
+- [x] Minimum documentation
+- [ ] Tests
 - [ ] Benchmarks all the things
-- [ ] Polish for crates.io debut
+- [ ] Better documentation
+- [x] Polish code for crates.io debut
 - [ ] Publish to crates.io
 
 0.2.0:
@@ -23,7 +23,6 @@ The march to 0.1.0:
 - [ ] Macro so users can create their own Shapes enum
 - [ ] Move the tree iterator code into macros?
 - [ ] R-Tree, R+Tree: implement, document, test, and benchmark
-- [ ] Use generic-array's new iterator (as of 0.3.1)
 
 0.3.0:
 - [ ] Inevitable bug fixes

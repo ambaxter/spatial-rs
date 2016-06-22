@@ -14,7 +14,6 @@ use std::fmt::Debug;
 use generic_array::ArrayLength;
 use std::marker::PhantomData;
 
-
 /// A tree leaf
 #[derive(Debug)]
 pub struct Leaf<P, DIM, LSHAPE, T>
@@ -31,14 +30,22 @@ impl<P, DIM, LSHAPE, T> Leaf<P, DIM, LSHAPE, T>
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
           LSHAPE: Shape<P, DIM>
 {
-    /// New leaf from shape and item
+/// New leaf from shape and item
     pub fn new(shape: LSHAPE, item: T) -> Leaf<P, DIM, LSHAPE, T> {
         Leaf{shape: shape, item: item, _p: PhantomData, _dim: PhantomData}
     }
 
-    /// Consumes self, returning the shape and item
+/// Consumes self, returning the shape and item
     pub fn extract(self) -> (LSHAPE, T) {
         (self.shape, self.item)
+    }
+
+    pub fn as_tuple(&self) -> (&LSHAPE, &T) {
+        (&self.shape, &self.item)
+    }
+
+    pub fn as_mut_tuple(&mut self) -> (&LSHAPE, &mut T) {
+        (&self.shape, &mut self.item)
     }
 }
 
@@ -94,47 +101,46 @@ pub trait SpatialQuery<P, DIM, LSHAPE, LEVEL, T>
     fn accept_level(&self, level: &LEVEL) -> bool;
 }
 
-/*
 // TODO: Figure this out later :/
-pub trait SpatialMap<'tree, P, DIM, LSHAPE, LEVEL, T>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
-        LSHAPE: 'tree,
-        T: 'tree
-{
-    /// Insert an item
-    fn insert(&mut self, shape: LSHAPE, item: T);
-
-    /// Remove all items whose shapes are accepted by the query
-    fn remove<Q: SpatialQuery<P, DIM, LSHAPE, LEVEL, T>>(&mut self, query: Q) -> Vec<(LSHAPE, T)>;
-
-    /// Remove all items whose shapes are accepted by the query and where f(&T) returns false
-    fn retain<Q, F>(&mut self, query: Q, f: F) -> Vec<(LSHAPE, T)>
-        where Q: SpatialQuery<P, DIM, LSHAPE, LEVEL, T>,
-        F: FnMut(&T) -> bool;
-
-    /// Whether the map is empty
-    fn is_empty(&self) -> bool;
-
-    /// Length of the map
-    fn len(&self) -> usize;
-
-    /// Clear the map
-    fn clear(&mut self);
-
-    /// Iter for the map
-    fn iter<ITER: Iterator<Item=(&'tree LSHAPE, &'tree T)>>(&'tree self) -> ITER;
-
-    /// IterMut for the map
-    fn iter_mut<ITERM: Iterator<Item=(&'tree LSHAPE, &'tree mut T)>>(&'tree mut self) -> ITERM;
-
-    /// Iter for the map with a given query
-    fn iter_query<Q, ITER>(&'tree self, query: Q) -> ITER
-        where Q: SpatialQuery<P, DIM, LSHAPE, LEVEL, T>,
-        ITER: Iterator<Item=(&'tree LSHAPE, &'tree T)>;
-
-    /// IterMut for the map with a given query
-    fn iter_query_mut<Q, ITERM>(&'tree mut self, query: Q) -> ITERM
-        where Q: SpatialQuery<P, DIM, LSHAPE, LEVEL, T>,
-        ITERM: Iterator<Item=(&'tree LSHAPE, &'tree mut T)>;
-}
-*/
+// pub trait SpatialMap<'tree, P, DIM, LSHAPE, LEVEL, T>
+// where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
+// LSHAPE: 'tree,
+// T: 'tree
+// {
+// Insert an item
+// fn insert(&mut self, shape: LSHAPE, item: T);
+//
+// Remove all items whose shapes are accepted by the query
+// fn remove<Q: SpatialQuery<P, DIM, LSHAPE, LEVEL, T>>(&mut self, query: Q) -> Vec<(LSHAPE, T)>;
+//
+// Remove all items whose shapes are accepted by the query and where f(&T) returns false
+// fn retain<Q, F>(&mut self, query: Q, f: F) -> Vec<(LSHAPE, T)>
+// where Q: SpatialQuery<P, DIM, LSHAPE, LEVEL, T>,
+// F: FnMut(&T) -> bool;
+//
+// Whether the map is empty
+// fn is_empty(&self) -> bool;
+//
+// Length of the map
+// fn len(&self) -> usize;
+//
+// Clear the map
+// fn clear(&mut self);
+//
+// Iter for the map
+// fn iter<ITER: Iterator<Item=(&'tree LSHAPE, &'tree T)>>(&'tree self) -> ITER;
+//
+// IterMut for the map
+// fn iter_mut<ITERM: Iterator<Item=(&'tree LSHAPE, &'tree mut T)>>(&'tree mut self) -> ITERM;
+//
+// Iter for the map with a given query
+// fn iter_query<Q, ITER>(&'tree self, query: Q) -> ITER
+// where Q: SpatialQuery<P, DIM, LSHAPE, LEVEL, T>,
+// ITER: Iterator<Item=(&'tree LSHAPE, &'tree T)>;
+//
+// IterMut for the map with a given query
+// fn iter_query_mut<Q, ITERM>(&'tree mut self, query: Q) -> ITERM
+// where Q: SpatialQuery<P, DIM, LSHAPE, LEVEL, T>,
+// ITERM: Iterator<Item=(&'tree LSHAPE, &'tree mut T)>;
+// }
+//

@@ -104,16 +104,7 @@ pub struct Rect<P, DIM>
 }
 
 impl<P, DIM> Rect<P, DIM>
-    where P: Float
-    + Signed
-    + Bounded
-    + MulAssign
-    + AddAssign
-    + ToPrimitive
-    + FromPrimitive
-    + Copy
-    + Debug
-    + Default,
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
     DIM: ArrayLength<P> + ArrayLength<(P,P)> {
 
 /// New Rect from a `GenericArray`
@@ -129,7 +120,7 @@ impl<P, DIM> Rect<P, DIM>
     }
 
 // TODO: I'm not sure if I like this
-/// New Rect from corners
+// New Rect from corners
     pub fn from_corners(x: GenericArray<P, DIM>, y: GenericArray<P, DIM>) -> Rect<P, DIM>{
         let mut edges = Rect::max_inverted();
         Point::new(x).expand_rect_to_fit(&mut edges);
@@ -207,7 +198,7 @@ pub enum Shapes<P, DIM>
     Rect(Rect<P, DIM>), // Other(Box<Shape<P>>)
 }
 
-/// The minimum functionality required to insert a shape into a `SpatialMap`
+/// The minimum functionality required to insert a shape into a `MbrMap`
 /// Until the rust compiler allows compile-time generic integers, the generics here will be kinda painful
 /// The parameter 'edges' represents the expanse of the rectangle in that dimension
 /// A rectangle whose corners are at (x1, y1), (x2, y2) will have the corresponding edges: (x1, x2), (y1, y2)

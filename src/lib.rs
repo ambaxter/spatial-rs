@@ -5,8 +5,10 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-#[macro_use] extern crate itertools;
-#[macro_use] extern crate generic_array;
+#[macro_use]
+extern crate itertools;
+#[macro_use]
+extern crate generic_array;
 
 extern crate ordered_float;
 extern crate num;
@@ -21,7 +23,6 @@ mod shapes;
 mod tree;
 mod vecext;
 
-use typenum::{U32, U64, Unsigned};
 use tree::mbr::index::r::RRemove;
 use tree::mbr::index::rstar::RStarInsert;
 pub use tree::mbr::{MbrMap, MbrQuery};
@@ -46,41 +47,56 @@ impl<P, DIM, LSHAPE, T> RStar<P, DIM, LSHAPE, T>
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
           LSHAPE: Shape<P, DIM>,
 {
-    /// Create a new R* tree with min and max children lengths set to 32 and 64, respectively
-    pub fn new() -> MbrMap<P, DIM, LSHAPE, RStarInsert<P, DIM, LSHAPE, U32, U64, T>, RRemove<P, DIM, LSHAPE, U32, T>, T> {
+/// Create a new R* tree with min and max children lengths set to 32 and 64, respectively
+    pub fn new() -> MbrMap<P, DIM, LSHAPE, RStarInsert<P, DIM, LSHAPE, T>, RRemove<P, DIM, LSHAPE, T>, T> {
         MbrMap::new(RStarInsert::new(), RRemove::new())
     }
 
-    /// Create a new R* tree with min and max children lengths as provided
-    pub fn new_with_limits<MIN: Unsigned, MAX: Unsigned>() -> MbrMap<P, DIM, LSHAPE, RStarInsert<P, DIM, LSHAPE, MIN, MAX, T>, RRemove<P, DIM, LSHAPE, MIN, T>, T> {
-        MbrMap::new(RStarInsert::new(), RRemove::new())
+/// Create a new R* tree with min and max children lengths as provided
+    pub fn new_with_limits(min: usize, max: usize) -> MbrMap<P, DIM, LSHAPE, RStarInsert<P, DIM, LSHAPE, T>, RRemove<P, DIM, LSHAPE, T>, T> {
+        MbrMap::new(RStarInsert::new_with_limits(min, max), RRemove::with_limits(min))
     }
 }
 
 #[cfg(test)]
 mod tests {
 
-    use typenum::consts::{U8, U16};
     use super::*;
     #[test]
     fn rstar_integration() {
-        let mut tree_map = RStar::new_with_limits::<U8, U16>();
+        let mut tree_map = RStar::new_with_limits(8, 16);
         for i in 0..32 {
             let i_f32 = i as f32;
             tree_map.insert(Point::new(arr![f32; i_f32, i_f32, i_f32]), i);
+            println!("i: {:?}", i);
         }
-        
-        assert_eq!(tree_map.len(), tree_map.iter().count());        
-        let query = RectQuery::ContainedBy(Rect::from_corners(arr![f32; 0.0f32, 0.0f32, 0.0f32], arr![f32; 9.0f32, 9.0f32, 9.0f32]));
+        assert_eq!(32, tree_map.len());
+        assert_eq!(tree_map.len(), tree_map.iter().count());
 
-        let removed = tree_map.remove(query.clone());
+        println!("Remove query");
+        let removed = tree_map.remove(MbrQuery::ContainedBy(Rect::from_corners(arr![f32; 0.0f32, 0.0f32, 0.0f32], arr![f32; 9.0f32, 9.0f32, 9.0f32])));
         assert_eq!(10, removed.len());
         assert_eq!(22, tree_map.len());
         assert_eq!(tree_map.len(), tree_map.iter().count());
-       
-        let removed_retain = tree_map.retain(RectQuery::ContainedBy(Rect::max()), |x| *x >= 20);
+
+        println!("Retain query");
+        let removed_retain = tree_map.retain(MbrQuery::ContainedBy(Rect::max()), |x| *x >= 20);
         assert_eq!(10, removed_retain.len());
         assert_eq!(12, tree_map.len());
+        assert_eq!(tree_map.len(), tree_map.iter().count());
+
+        println!("Remove all");
+        let retain_none = tree_map.remove(MbrQuery::ContainedBy(Rect::max()));
+        assert_eq!(12, retain_none.len());
+        assert_eq!(0, tree_map.len());
+        assert_eq!(tree_map.len(), tree_map.iter().count());
+
+        for i in 0..32 {
+            let i_f32 = i as f32;
+            tree_map.insert(Point::new(arr![f32; i_f32, i_f32, i_f32]), i);
+            println!("i: {:?}", i);
+        }
+        assert_eq!(32, tree_map.len());
         assert_eq!(tree_map.len(), tree_map.iter().count());
     }
 }
