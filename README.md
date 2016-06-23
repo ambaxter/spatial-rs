@@ -11,8 +11,8 @@ The march to 0.1.0:
 - [x] Make Rect::margin a trait
 - [x] Split SpatialMapQuery trait and RectQuery
 - [x] Minimum documentation
-- [ ] Tests
-- [ ] Benchmarks all the things
+- [x] Tests
+- [x] Benchmarks all the things
 - [ ] Better documentation
 - [x] Polish code for crates.io debut
 - [ ] Publish to crates.io
