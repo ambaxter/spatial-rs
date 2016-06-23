@@ -26,8 +26,7 @@ mod vecext;
 use tree::mbr::index::IndexInsert;
 use tree::mbr::index::r::RRemove;
 use tree::mbr::index::rstar::RStarInsert;
-use tree::mbr::MbrMap;
-pub use tree::mbr::MbrQuery;
+pub use tree::mbr::{MbrMap, MbrQuery};
 use generic_array::ArrayLength;
 pub use shapes::{Shape, Shapes, Point, LineSegment, Rect};
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
@@ -79,7 +78,7 @@ mod tests {
     use super::*;
     #[test]
     fn rstar_integration() {
-        let mut tree_map = RStar::new_with_limits(8, 16);
+        let mut tree_map = RStar::new_with_max(16);
         for i in 0..32 {
             let i_f32 = i as f32;
             tree_map.insert(Point::new(arr![f32; i_f32, i_f32, i_f32]), i);

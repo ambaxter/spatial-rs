@@ -15,7 +15,6 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use ordered_float::NotNaN;
 use std::cmp;
-use std::f32;
 use generic_array::ArrayLength;
 use std::mem;
 use parking_lot::RwLock;
