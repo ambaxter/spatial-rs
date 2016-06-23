@@ -67,7 +67,10 @@ fn remove_rng_bench_3d(b: &mut Bencher, size: usize) {
     b.iter( || {
         let x_array = arr![f64; rng.next_f64(), rng.next_f64(), rng.next_f64()];
         let y_array = arr![f64; rng.next_f64(), rng.next_f64(), rng.next_f64()];
-        tree_map.remove(MbrQuery::Overlaps(Rect::from_corners(x_array,y_array)));
+        let removed = tree_map.remove(MbrQuery::Overlaps(Rect::from_corners(x_array,y_array)));
+        for(lshape, item) in removed {
+            tree_map.insert(lshape, item);
+        }
     });
 }
 
