@@ -14,7 +14,7 @@ use typenum::U3;
 
 fn generate_tree_with_size(count: usize) -> RStarTree<f64, U3, Point<f64, U3>, usize>
 {
-    let mut tree_map = RStar::new_with_max(512);
+    let mut tree_map = RStar::new_with_max(1024);
     let mut rng = rand::thread_rng();
     for i in 0..count {
         tree_map.insert(Point::new(arr![f64; rng.next_f64(), rng.next_f64(), rng.next_f64()]), i);
