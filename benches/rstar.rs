@@ -9,7 +9,7 @@ extern crate spatial;
 
 use rand::Rng;
 use test::Bencher;
-use spatial::{Point, Rect, MbrQuery, RStar, RStarTree};
+use spatial::{Point, Rect, MbrRectQuery, RStar, RStarTree};
 use typenum::U3;
 
 fn generate_tree_with_size(count: usize) -> RStarTree<f64, U3, Point<f64, U3>, usize>
@@ -56,7 +56,7 @@ fn search_rng_bench_3d(b: &mut Bencher, size: usize) {
     b.iter( || {
         let x_array = arr![f64; rng.next_f64(), rng.next_f64(), rng.next_f64()];
         let y_array = arr![f64; rng.next_f64(), rng.next_f64(), rng.next_f64()];
-        tree_map.iter_query(MbrQuery::Overlaps(Rect::from_corners(x_array,y_array)))
+        tree_map.iter_query(MbrRectQuery::Overlaps(Rect::from_corners(x_array,y_array)))
             .count();
     });
 }
@@ -67,7 +67,7 @@ fn remove_rng_bench_3d(b: &mut Bencher, size: usize) {
     b.iter( || {
         let x_array = arr![f64; rng.next_f64(), rng.next_f64(), rng.next_f64()];
         let y_array = arr![f64; rng.next_f64(), rng.next_f64(), rng.next_f64()];
-        let removed = tree_map.remove(MbrQuery::Overlaps(Rect::from_corners(x_array,y_array)));
+        let removed = tree_map.remove(MbrRectQuery::Overlaps(Rect::from_corners(x_array,y_array)));
         for(lshape, item) in removed {
             tree_map.insert(lshape, item);
         }
