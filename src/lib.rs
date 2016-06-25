@@ -27,7 +27,7 @@ pub use tree::mbr::leafshape::MbrLeafShape;
 use tree::mbr::index::IndexInsert;
 use tree::mbr::index::r::RRemove;
 use tree::mbr::index::rstar::RStarInsert;
-pub use tree::mbr::MbrMap;
+pub use tree::mbr::map::MbrMap;
 pub use tree::mbr::query::MbrRectQuery;
 use generic_array::ArrayLength;
 pub use shapes::{Shapes, Point, LineSegment, Rect};
