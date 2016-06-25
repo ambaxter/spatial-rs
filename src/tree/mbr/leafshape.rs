@@ -7,7 +7,7 @@
 
 use num::{Zero, One, Signed, Float, Bounded, ToPrimitive, FromPrimitive, pow};
 use std::ops::{MulAssign, AddAssign};
-use shapes::{Shapes, Point, LineSegment, Rect};
+use geometry::{Shapes, Point, LineSegment, Rect};
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 use generic_array::ArrayLength;
@@ -299,7 +299,7 @@ mod tests {
     use shapes::{Shapes, Point, LineSegment, Rect};
     use generic_array::GenericArray;
     use super::*;
-    
+
     const ONE: [f64; 3] = [1.0f64, 1.0f64, 1.0f64];
     const ZERO: [f64; 3] = [0.0f64, 0.0f64, 0.0f64];
     const NEG_ONE: [f64; 3] = [-1.0f64, -1.0f64, -1.0f64];

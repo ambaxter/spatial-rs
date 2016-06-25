@@ -19,7 +19,7 @@ extern crate parking_lot;
 #[macro_use]
 extern crate approx;
 
-mod shapes;
+mod geometry;
 mod tree;
 mod vecext;
 
@@ -28,7 +28,7 @@ use tree::mbr::index::IndexInsert;
 use tree::mbr::index::r::RRemove;
 use tree::mbr::index::rstar::RStarInsert;
 use generic_array::ArrayLength;
-pub use shapes::{Shapes, Point, LineSegment, Rect};
+pub use geometry::{Shapes, Point, LineSegment, Rect};
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
 use std::fmt::Debug;

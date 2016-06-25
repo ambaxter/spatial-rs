@@ -8,7 +8,7 @@
 
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
-use shapes::Rect;
+use geometry::Rect;
 use std::slice::Iter as SliceIter;
 use std::fmt::Debug;
 use generic_array::ArrayLength;

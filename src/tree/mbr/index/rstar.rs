@@ -9,7 +9,7 @@ use num::{Zero, Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign, Range, Deref};
 use tree::mbr::index::{IndexInsert, D_MAX, AT_ROOT, NOT_AT_ROOT, FORCE_SPLIT, DONT_FORCE_SPLIT};
 use tree::mbr::{MbrLeaf, MbrLeafShape, MbrNode};
-use shapes::Rect;
+use geometry::Rect;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use ordered_float::NotNaN;

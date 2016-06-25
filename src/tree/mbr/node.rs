@@ -8,7 +8,7 @@
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
 use tree::mbr::{MbrLeaf, MbrLeafShape};
-use shapes::Rect;
+use geometry::Rect;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
 use parking_lot::RwLock;
