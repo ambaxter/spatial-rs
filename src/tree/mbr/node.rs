@@ -7,11 +7,10 @@
 
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
-use tree::mbr::leafshape::MbrLeafShape;
+use tree::mbr::{MbrLeaf, MbrLeafShape};
 use shapes::Rect;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
-use tree::mbr::leaf::MbrLeaf;
 use parking_lot::RwLock;
 
 /// Level node of a tree. Either contains other levels or leaves

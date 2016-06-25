@@ -6,9 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 
 use generic_array::ArrayLength;
-use tree::mbr::node::MbrNode;
-use tree::mbr::leaf::MbrLeaf;
-use tree::mbr::query::MbrRectQuery;
+use tree::mbr::{MbrNode, MbrLeaf, MbrRectQuery};
 pub mod rstar;
 pub mod r;
 

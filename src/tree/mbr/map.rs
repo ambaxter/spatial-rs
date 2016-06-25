@@ -8,16 +8,13 @@
 
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
-use tree::mbr::leafshape::MbrLeafShape;
 use shapes::Rect;
 use std::slice::Iter as SliceIter;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
 use std::rc::Rc;
 use tree::mbr::index::{IndexInsert, IndexRemove};
-use tree::mbr::leaf::MbrLeaf;
-use tree::mbr::query::{MbrRectQuery, MbrQuery};
-use tree::mbr::node::MbrNode;
+use tree::mbr::{MbrLeafShape, MbrLeaf, MbrRectQuery, MbrQuery, MbrNode};
 use std::ops::Deref;
 use std::mem;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};

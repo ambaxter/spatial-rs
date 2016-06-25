@@ -8,9 +8,7 @@
 use num::{Zero, Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign, Range, Deref};
 use tree::mbr::index::{IndexInsert, D_MAX, AT_ROOT, NOT_AT_ROOT, FORCE_SPLIT, DONT_FORCE_SPLIT};
-use tree::mbr::leaf::MbrLeaf;
-use tree::mbr::leafshape::MbrLeafShape;
-use tree::mbr::node::MbrNode;
+use tree::mbr::{MbrLeaf, MbrLeafShape, MbrNode};
 use shapes::Rect;
 use std::fmt::Debug;
 use std::marker::PhantomData;

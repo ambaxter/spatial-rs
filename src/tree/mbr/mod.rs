@@ -6,9 +6,14 @@
 // copied, modified, or distributed except according to those terms.
 
 pub mod index;
-pub mod leaf;
-pub mod leafshape;
-pub mod query;
-pub mod node;
-pub mod map;
+mod leaf;
+mod leafshape;
+mod map;
+mod query;
+mod node;
 
+pub use tree::mbr::leaf::MbrLeaf;
+pub use tree::mbr::leafshape::MbrLeafShape;
+pub use tree::mbr::map::{Iter, IterMut, MbrMap};
+pub use tree::mbr::node::MbrNode;
+pub use tree::mbr::query::{MbrQuery, MbrRectQuery};

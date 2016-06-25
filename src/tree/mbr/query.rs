@@ -8,9 +8,7 @@
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
 use shapes::Rect;
-use tree::mbr::leafshape::MbrLeafShape;
-use tree::mbr::leaf::MbrLeaf;
-use tree::mbr::node::MbrNode;
+use tree::mbr::{MbrLeafShape, MbrLeaf, MbrNode};
 use std::fmt::Debug;
 use generic_array::ArrayLength;
 

@@ -8,13 +8,10 @@
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
 use vecext::{RetainMut, RetainAndAppend};
-use tree::mbr::leafshape::MbrLeafShape;
 use shapes::Rect;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
-use tree::mbr::node::MbrNode;
-use tree::mbr::query::{MbrRectQuery, MbrQuery};
-use tree::mbr::leaf::MbrLeaf;
+use tree::mbr::{MbrNode, MbrRectQuery, MbrQuery, MbrLeaf, MbrLeafShape};
 use tree::mbr::index::{IndexInsert, IndexRemove, RemoveReturn, AT_ROOT, NOT_AT_ROOT};
 use std::marker::PhantomData;
 use parking_lot::RwLock;
