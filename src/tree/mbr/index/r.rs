@@ -11,7 +11,7 @@ use vecext::{RetainMut, RetainAndAppend};
 use shapes::Rect;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
-use tree::mbr::{MbrNode, MbrRectQuery, MbrQuery, MbrLeaf, MbrLeafShape};
+use tree::mbr::{MbrNode, MbrQuery, MbrLeaf, MbrLeafShape};
 use tree::mbr::index::{IndexInsert, IndexRemove, RemoveReturn, AT_ROOT, NOT_AT_ROOT};
 use std::marker::PhantomData;
 use parking_lot::RwLock;
@@ -46,7 +46,7 @@ impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
     }
 
 /// Removes matching leaves from a leaf level. Return true if the level should be retianed
-    fn remove_matching_leaves<F: FnMut(&T) -> bool>(&self, query: &MbrRectQuery<P, DIM>, mbr: &mut Rect<P, DIM>, children: &mut Vec<RwLock<MbrLeaf<P, DIM, LS, T>>>,
+    fn remove_matching_leaves<Q: MbrQuery<P, DIM, LS, T>, F: FnMut(&T) -> bool>(&self, query: &Q, mbr: &mut Rect<P, DIM>, children: &mut Vec<RwLock<MbrLeaf<P, DIM, LS, T>>>,
         removed: &mut Vec<MbrLeaf<P, DIM, LS, T>>,
         to_reinsert: &mut Vec<MbrLeaf<P, DIM, LS, T>>,
         f: &mut F,
@@ -86,7 +86,7 @@ impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
     }
 
 /// Recursively remove leaves from a level. Return true if the level should be retianed
-    fn remove_leaves_from_level<F: FnMut(&T) -> bool>(&self, query: &MbrRectQuery<P, DIM>, level: &mut MbrNode<P, DIM, LS, T>,
+    fn remove_leaves_from_level<Q: MbrQuery<P, DIM, LS, T>, F: FnMut(&T) -> bool>(&self, query: &Q, level: &mut MbrNode<P, DIM, LS, T>,
         removed: &mut Vec<MbrLeaf<P, DIM, LS, T>>,
         to_reinsert: &mut Vec<MbrLeaf<P, DIM, LS, T>>,
         f: &mut F,
@@ -123,10 +123,10 @@ impl<P, DIM, LS, T, I> IndexRemove<P, DIM, LS, T, I> for RRemove<P, DIM, LS, T>
         LS: MbrLeafShape<P, DIM>,
         I: IndexInsert<P, DIM, LS, T>,
 {
-    fn remove_from_root<F: FnMut(&T) -> bool>(&self,
+    fn remove_from_root<Q: MbrQuery<P, DIM, LS, T>, F: FnMut(&T) -> bool>(&self,
         mut root: MbrNode<P, DIM, LS, T>,
         insert_index: &I,
-        query: MbrRectQuery<P, DIM>,
+        query: Q,
         mut f: F) -> RemoveReturn<P, DIM, LS, T> {
 
             if root.is_empty() {

@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 
 use generic_array::ArrayLength;
-use tree::mbr::{MbrNode, MbrLeaf, MbrRectQuery};
+use tree::mbr::{MbrNode, MbrLeaf, MbrQuery};
 pub mod rstar;
 pub mod r;
 
@@ -39,11 +39,11 @@ pub trait IndexRemove<P, DIM, LS, T, I>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
           I: IndexInsert<P, DIM, LS, T>
 {
-    fn remove_from_root<F: FnMut(&T) -> bool>
+    fn remove_from_root<Q: MbrQuery<P, DIM, LS, T>, F: FnMut(&T) -> bool>
         (&self,
          mut root: MbrNode<P, DIM, LS, T>,
          insert_index: &I,
-         query: MbrRectQuery<P, DIM>,
+         query: Q,
          mut f: F)
          -> RemoveReturn<P, DIM, LS, T>;
 }
