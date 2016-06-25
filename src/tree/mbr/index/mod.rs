@@ -6,8 +6,9 @@
 // copied, modified, or distributed except according to those terms.
 
 use generic_array::ArrayLength;
-use tree::mbr::{MbrNode, MbrQuery};
-use tree::Leaf;
+use tree::mbr::node::MbrNode;
+use tree::mbr::leaf::MbrLeaf;
+use tree::mbr::query::MbrRectQuery;
 pub mod rstar;
 pub mod r;
 
@@ -23,7 +24,7 @@ pub trait IndexInsert<P, DIM, LS, T>
 {
     fn insert_into_root(&self,
                         mut root: MbrNode<P, DIM, LS, T>,
-                        leaf: Leaf<P, DIM, LS, T>)
+                        leaf: MbrLeaf<P, DIM, LS, T>)
                         -> MbrNode<P, DIM, LS, T>;
     
     fn preferred_min(&self) -> usize;
@@ -33,7 +34,7 @@ pub trait IndexInsert<P, DIM, LS, T>
     fn new_no_alloc_leaves(&self) -> MbrNode<P, DIM, LS, T>;
 }
 
-pub type RemoveReturn<P, DIM, LS, T> = (MbrNode<P, DIM, LS, T>, Vec<Leaf<P, DIM, LS, T>>);
+pub type RemoveReturn<P, DIM, LS, T> = (MbrNode<P, DIM, LS, T>, Vec<MbrLeaf<P, DIM, LS, T>>);
 
 /// Remove entries from the tree that match the query, but not the retain function f.
 pub trait IndexRemove<P, DIM, LS, T, I>
@@ -44,7 +45,7 @@ pub trait IndexRemove<P, DIM, LS, T, I>
         (&self,
          mut root: MbrNode<P, DIM, LS, T>,
          insert_index: &I,
-         query: MbrQuery<P, DIM>,
+         query: MbrRectQuery<P, DIM>,
          mut f: F)
          -> RemoveReturn<P, DIM, LS, T>;
 }

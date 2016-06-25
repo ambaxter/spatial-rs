@@ -8,11 +8,13 @@
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
 use vecext::{RetainMut, RetainAndAppend};
-use shapes::{LeafShape, Rect};
+use tree::mbr::leafshape::MbrLeafShape;
+use shapes::Rect;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
-use tree::mbr::{MbrNode, MbrQuery};
-use tree::{Leaf, SpatialQuery};
+use tree::mbr::node::MbrNode;
+use tree::mbr::query::{MbrRectQuery, MbrQuery};
+use tree::mbr::leaf::MbrLeaf;
 use tree::mbr::index::{IndexInsert, IndexRemove, RemoveReturn, AT_ROOT, NOT_AT_ROOT};
 use std::marker::PhantomData;
 use parking_lot::RwLock;
@@ -32,7 +34,7 @@ pub struct RRemove<P, DIM, LS, T>
 impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)>,
-        LS: LeafShape<P, DIM>,
+        LS: MbrLeafShape<P, DIM>,
 {
 
     pub fn with_min(min: usize) -> RRemove<P, DIM, LS, T> {
@@ -47,9 +49,9 @@ impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
     }
 
 /// Removes matching leaves from a leaf level. Return true if the level should be retianed
-    fn remove_matching_leaves<F: FnMut(&T) -> bool>(&self, query: &MbrQuery<P, DIM>, mbr: &mut Rect<P, DIM>, children: &mut Vec<RwLock<Leaf<P, DIM, LS, T>>>,
-        removed: &mut Vec<Leaf<P, DIM, LS, T>>,
-        to_reinsert: &mut Vec<Leaf<P, DIM, LS, T>>,
+    fn remove_matching_leaves<F: FnMut(&T) -> bool>(&self, query: &MbrRectQuery<P, DIM>, mbr: &mut Rect<P, DIM>, children: &mut Vec<RwLock<MbrLeaf<P, DIM, LS, T>>>,
+        removed: &mut Vec<MbrLeaf<P, DIM, LS, T>>,
+        to_reinsert: &mut Vec<MbrLeaf<P, DIM, LS, T>>,
         f: &mut F,
         at_root: bool) -> bool {
 
@@ -77,7 +79,7 @@ impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
     }
 
 /// Consume all child leaves and queue them for reinsert
-    fn consume_leaves_for_reinsert(&self, nodes: &mut Vec<MbrNode<P, DIM, LS, T>>, to_reinsert: &mut Vec<Leaf<P, DIM, LS, T>>) {
+    fn consume_leaves_for_reinsert(&self, nodes: &mut Vec<MbrNode<P, DIM, LS, T>>, to_reinsert: &mut Vec<MbrLeaf<P, DIM, LS, T>>) {
         for node in nodes {
             match *node {
                 MbrNode::Leaves{ref mut children, ..} => to_reinsert.append(&mut mem::replace(children, Vec::with_capacity(0)).unpack_rwlocks()),
@@ -87,9 +89,9 @@ impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
     }
 
 /// Recursively remove leaves from a level. Return true if the level should be retianed
-    fn remove_leaves_from_level<F: FnMut(&T) -> bool>(&self, query: &MbrQuery<P, DIM>, level: &mut MbrNode<P, DIM, LS, T>,
-        removed: &mut Vec<Leaf<P, DIM, LS, T>>,
-        to_reinsert: &mut Vec<Leaf<P, DIM, LS, T>>,
+    fn remove_leaves_from_level<F: FnMut(&T) -> bool>(&self, query: &MbrRectQuery<P, DIM>, level: &mut MbrNode<P, DIM, LS, T>,
+        removed: &mut Vec<MbrLeaf<P, DIM, LS, T>>,
+        to_reinsert: &mut Vec<MbrLeaf<P, DIM, LS, T>>,
         f: &mut F,
         at_root: bool) -> bool {
             if !query.accept_level(level) {
@@ -121,13 +123,13 @@ impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
 impl<P, DIM, LS, T, I> IndexRemove<P, DIM, LS, T, I> for RRemove<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
-        LS: LeafShape<P, DIM>,
+        LS: MbrLeafShape<P, DIM>,
         I: IndexInsert<P, DIM, LS, T>,
 {
     fn remove_from_root<F: FnMut(&T) -> bool>(&self,
         mut root: MbrNode<P, DIM, LS, T>,
         insert_index: &I,
-        query: MbrQuery<P, DIM>,
+        query: MbrRectQuery<P, DIM>,
         mut f: F) -> RemoveReturn<P, DIM, LS, T> {
 
             if root.is_empty() {
