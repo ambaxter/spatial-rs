@@ -28,7 +28,7 @@ use tree::mbr::index::r::RRemove;
 use tree::mbr::index::rstar::RStarInsert;
 pub use tree::mbr::{MbrMap, MbrQuery};
 use generic_array::ArrayLength;
-pub use shapes::{Shape, Shapes, Point, LineSegment, Rect};
+pub use shapes::{LeafShape, Shapes, Point, LineSegment, Rect};
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
 use std::fmt::Debug;
@@ -36,81 +36,38 @@ use std::marker::PhantomData;
 
 
 /// Convenience struct for creating a new R* Tree
-pub struct RStar<P, DIM, LSHAPE, T> {
+pub struct RStar<P, DIM, LS, T> {
     _p: PhantomData<P>,
     _dim: PhantomData<DIM>,
-    _s: PhantomData<LSHAPE>,
+    _ls: PhantomData<LS>,
     _t: PhantomData<T>,
 }
 
-/// An R* Tree
-pub type RStarTree<P, DIM, LSHAPE, T> =  MbrMap<P, DIM, LSHAPE, RStarInsert<P, DIM, LSHAPE, T>, RRemove<P, DIM, LSHAPE, T>, T>;
+/// R* Tree Type
+pub type RStarTree<P, DIM, LS, T> =  MbrMap<P, DIM, LS, RStarInsert<P, DIM, LS, T>, RRemove<P, DIM, LS, T>, T>;
 
-impl<P, DIM, LSHAPE, T> RStar<P, DIM, LSHAPE, T>
+impl<P, DIM, LS, T> RStar<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
-          LSHAPE: Shape<P, DIM>,
+          LS: LeafShape<P, DIM>,
 {
 /// Create a new R* tree with min and max children lengths set to 25 and 64, respectively
-    pub fn new() -> RStarTree<P, DIM, LSHAPE, T> {
+    pub fn new() -> RStarTree<P, DIM, LS, T> {
         RStar::map_from_insert(RStarInsert::new())
     }
 
 /// Create a new R* tree with max children lengths as provided. min length will be set to 0.3 * max
-    pub fn new_with_max(max: usize) -> RStarTree<P, DIM, LSHAPE, T> {
+    pub fn new_with_max(max: usize) -> RStarTree<P, DIM, LS, T> {
         RStar::map_from_insert(RStarInsert::new_with_max(max))
     }
 
 /// Creates a mew R* tree with options as provided. min children will be set to reinsert_p.min(split_p) * max
-    pub fn new_with_options(max: usize, reinsert_p: f32, split_p: f32, choose_subtree_p: usize) -> RStarTree<P, DIM, LSHAPE, T> {
+    pub fn new_with_options(max: usize, reinsert_p: f32, split_p: f32, choose_subtree_p: usize) -> RStarTree<P, DIM, LS, T> {
         RStar::map_from_insert(RStarInsert::new_with_options(max, reinsert_p, split_p, choose_subtree_p))
     }
 
-    fn map_from_insert(rstar_insert: RStarInsert<P, DIM, LSHAPE, T>) -> RStarTree<P, DIM, LSHAPE, T> {
+    fn map_from_insert(rstar_insert: RStarInsert<P, DIM, LS, T>) -> RStarTree<P, DIM, LS, T> {
         let min = rstar_insert.preferred_min();
         MbrMap::new(rstar_insert, RRemove::with_min(min))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use super::*;
-    #[test]
-    fn rstar_integration() {
-        let mut tree_map = RStar::new_with_max(16);
-        for i in 0..32 {
-            let i_f32 = i as f32;
-            tree_map.insert(Point::new(arr![f32; i_f32, i_f32, i_f32]), i);
-            println!("i: {:?}", i);
-        }
-        assert_eq!(32, tree_map.len());
-        assert_eq!(tree_map.len(), tree_map.iter().count());
-
-        println!("Remove query");
-        let removed = tree_map.remove(MbrQuery::ContainedBy(Rect::from_corners(arr![f32; 0.0f32, 0.0f32, 0.0f32], arr![f32; 9.0f32, 9.0f32, 9.0f32])));
-        assert_eq!(10, removed.len());
-        assert_eq!(22, tree_map.len());
-        assert_eq!(tree_map.len(), tree_map.iter().count());
-
-        println!("Retain query");
-        let removed_retain = tree_map.retain(MbrQuery::ContainedBy(Rect::max()), |x| *x >= 20);
-        assert_eq!(10, removed_retain.len());
-        assert_eq!(12, tree_map.len());
-        assert_eq!(tree_map.len(), tree_map.iter().count());
-
-        println!("Remove all");
-        let retain_none = tree_map.remove(MbrQuery::ContainedBy(Rect::max()));
-        assert_eq!(12, retain_none.len());
-        assert_eq!(0, tree_map.len());
-        assert_eq!(tree_map.len(), tree_map.iter().count());
-
-        for i in 0..32 {
-            let i_f32 = i as f32;
-            tree_map.insert(Point::new(arr![f32; i_f32, i_f32, i_f32]), i);
-            println!("i: {:?}", i);
-        }
-        assert_eq!(32, tree_map.len());
-        assert_eq!(tree_map.len(), tree_map.iter().count());
     }
 }

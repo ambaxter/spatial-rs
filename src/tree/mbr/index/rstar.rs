@@ -10,7 +10,7 @@ use std::ops::{MulAssign, AddAssign, Range, Deref};
 use tree::mbr::MbrNode;
 use tree::Leaf;
 use tree::mbr::index::{IndexInsert, D_MAX, AT_ROOT, NOT_AT_ROOT, FORCE_SPLIT, DONT_FORCE_SPLIT};
-use shapes::{Shape, Rect};
+use shapes::{LeafShape, Rect};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use ordered_float::NotNaN;
@@ -41,15 +41,15 @@ impl<P, DIM> Margin<P> for Rect<P, DIM>
 
 #[derive(Debug)]
 #[must_use]
-enum InsertResult<P, DIM, LSHAPE, T>
+enum InsertResult<P, DIM, LS, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     Ok,
-    Reinsert(Vec<Leaf<P, DIM, LSHAPE, T>>),
-    Split(MbrNode<P, DIM, LSHAPE, T>),
+    Reinsert(Vec<Leaf<P, DIM, LS, T>>),
+    Split(MbrNode<P, DIM, LS, T>),
 }
 
-impl<P, DIM, LSHAPE, T> InsertResult<P, DIM, LSHAPE, T>
+impl<P, DIM, LS, T> InsertResult<P, DIM, LS, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     fn is_reinsert(&self) -> bool {
@@ -61,7 +61,7 @@ impl<P, DIM, LSHAPE, T> InsertResult<P, DIM, LSHAPE, T>
 }
 
 #[derive(Debug)]
-pub struct RStarInsert<P, DIM, LSHAPE, T>
+pub struct RStarInsert<P, DIM, LS, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     max: usize,
@@ -72,26 +72,26 @@ pub struct RStarInsert<P, DIM, LSHAPE, T>
     max_k: usize,
     _dim: PhantomData<DIM>,
     _p: PhantomData<P>,
-    _shape: PhantomData<LSHAPE>,
+    _ls: PhantomData<LS>,
     _t: PhantomData<T>,
 }
 
 
-impl<P, DIM, LSHAPE, T> RStarInsert<P, DIM, LSHAPE, T>
+impl<P, DIM, LS, T> RStarInsert<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
-        LSHAPE: Shape<P, DIM>,
+        LS: LeafShape<P, DIM>,
 {
 
-    pub fn new() -> RStarInsert<P, DIM, LSHAPE, T> {
+    pub fn new() -> RStarInsert<P, DIM, LS, T> {
         RStarInsert::new_with_options(D_MAX, D_REINSERT_P, D_SPLIT_P, D_CHOOSE_SUBTREE_P)
     }
 
-    pub fn new_with_max(max: usize) -> RStarInsert<P, DIM, LSHAPE, T> {
+    pub fn new_with_max(max: usize) -> RStarInsert<P, DIM, LS, T> {
         RStarInsert::new_with_options(max, D_REINSERT_P, D_SPLIT_P, D_CHOOSE_SUBTREE_P)
     }
 
-    pub fn new_with_options(max: usize, reinsert_p: f32, split_p: f32, choose_subtree_p: usize) -> RStarInsert<P, DIM, LSHAPE, T> {
+    pub fn new_with_options(max: usize, reinsert_p: f32, split_p: f32, choose_subtree_p: usize) -> RStarInsert<P, DIM, LS, T> {
         let preferred_min = cmp::max((max as f32 * reinsert_p.min(split_p)) as usize, 1);
         let reinsert_size = cmp::max((max as f32 * reinsert_p) as usize, 1);
         let reinsert_m = max - reinsert_size;
@@ -111,33 +111,33 @@ impl<P, DIM, LSHAPE, T> RStarInsert<P, DIM, LSHAPE, T>
             max_k: max_k,
             _dim: PhantomData,
             _p: PhantomData,
-            _shape: PhantomData,
+            _ls: PhantomData,
             _t: PhantomData
         }
     }
 
-    fn area_cost(&self, mbr: &Rect<P, DIM>, leaf: &Leaf<P, DIM, LSHAPE, T>) -> (NotNaN<P>, NotNaN<P>) {
+    fn area_cost(&self, mbr: &Rect<P, DIM>, leaf: &Leaf<P, DIM, LS, T>) -> (NotNaN<P>, NotNaN<P>) {
         let mut expanded = mbr.clone();
-        leaf.expand_rect_to_fit(&mut expanded);
+        leaf.expand_mbr_to_fit(&mut expanded);
         let mbr_area = mbr.area();
         let area_cost = expanded.area() - mbr_area;
         (NotNaN::from(area_cost), NotNaN::from(mbr_area))
     }
 
-    fn overlap_cost(&self, mbr: &Rect<P, DIM>, leaf: &Leaf<P, DIM, LSHAPE, T>) -> NotNaN<P> {
-        let overlap = leaf.area_overlapped_with_rect(mbr);
+    fn overlap_cost(&self, mbr: &Rect<P, DIM>, leaf: &Leaf<P, DIM, LS, T>) -> NotNaN<P> {
+        let overlap = leaf.area_overlapped_with_mbr(mbr);
         let overlap_cost = leaf.area() - overlap;
         NotNaN::from(overlap_cost)
     }
 
-    fn overlap_area_cost(&self, mbr: &Rect<P, DIM>, leaf: &Leaf<P, DIM, LSHAPE, T>) -> (NotNaN<P>, NotNaN<P>, NotNaN<P>) {
+    fn overlap_area_cost(&self, mbr: &Rect<P, DIM>, leaf: &Leaf<P, DIM, LS, T>) -> (NotNaN<P>, NotNaN<P>, NotNaN<P>) {
         let (area_cost, mbr_area) = self.area_cost(mbr, leaf);
         let overlap_cost = self.overlap_cost(mbr, leaf);
         (overlap_cost, area_cost, mbr_area)
     }
 
 // CS2 + optimizations
-    fn choose_subnode<'tree>(&self, level: &'tree mut Vec<MbrNode<P, DIM, LSHAPE, T>>, leaf: &Leaf<P, DIM, LSHAPE, T>) -> &'tree mut MbrNode<P, DIM, LSHAPE, T> {
+    fn choose_subnode<'tree>(&self, level: &'tree mut Vec<MbrNode<P, DIM, LS, T>>, leaf: &Leaf<P, DIM, LS, T>) -> &'tree mut MbrNode<P, DIM, LS, T> {
         assert!(!level.is_empty(), "Level should not be empty!");
         if level.first().unwrap().has_leaves() {
             if level.len() > self.choose_subtree_p {
@@ -151,25 +151,25 @@ impl<P, DIM, LSHAPE, T> RStarInsert<P, DIM, LSHAPE, T>
         level.iter_mut().min_by_key(|a| self.area_cost(a.mbr(), leaf)).unwrap()
     }
 
-    fn split_for_reinsert(&self, mbr: &mut Rect<P, DIM>, children: &mut Vec<RwLock<Leaf<P, DIM, LSHAPE, T>>>) -> Vec<Leaf<P, DIM, LSHAPE, T>> {
+    fn split_for_reinsert(&self, mbr: &mut Rect<P, DIM>, children: &mut Vec<RwLock<Leaf<P, DIM, LS, T>>>) -> Vec<Leaf<P, DIM, LS, T>> {
         let mut leaf_children = mem::replace(children, Vec::with_capacity(0))
             .unpack_rwlocks();
 
         // RI1 & RI2
-        leaf_children.sort_by_key(|a| NotNaN::from(a.distance_from_rect_center(mbr)));
+        leaf_children.sort_by_key(|a| NotNaN::from(a.distance_from_mbr_center(mbr)));
         //RI3
         let split = leaf_children.split_off(self.reinsert_m);
         *mbr = Rect::max_inverted();
         for child in &leaf_children {
-            child.expand_rect_to_fit(mbr);
+            child.expand_mbr_to_fit(mbr);
         }
         *children = leaf_children.pack_rwlocks();
         split
     }
 
-    fn insert_into_level(&self, level: &mut MbrNode<P, DIM, LSHAPE, T>, leaf: Leaf<P, DIM, LSHAPE, T>, at_root: bool, force_split: bool) -> InsertResult<P, DIM, LSHAPE, T> {
+    fn insert_into_level(&self, level: &mut MbrNode<P, DIM, LS, T>, leaf: Leaf<P, DIM, LS, T>, at_root: bool, force_split: bool) -> InsertResult<P, DIM, LS, T> {
         //I4
-        leaf.shape.expand_rect_to_fit(level.mbr_mut());
+        leaf.shape.expand_mbr_to_fit(level.mbr_mut());
         match *level {
             //I2
             MbrNode::Leaves{ref mut children, ..} => {
@@ -187,7 +187,7 @@ impl<P, DIM, LSHAPE, T> RStarInsert<P, DIM, LSHAPE, T>
                     if insert_result.is_reinsert() {
                         *mbr = Rect::max_inverted();
                         for child in children {
-                            child.mbr().expand_rect_to_fit(mbr);
+                            child.mbr().expand_mbr_to_fit(mbr);
                         }
                     }
                     return insert_result;
@@ -203,7 +203,7 @@ impl<P, DIM, LSHAPE, T> RStarInsert<P, DIM, LSHAPE, T>
 
 
     // fn best_position_for_axis -> (margin, (axis, edge, index))
-    fn best_split_position_for_axis<V: Shape<P, DIM>>(&self, axis: usize, children: &mut Vec<V>) ->(P, (usize, usize, usize)) {
+    fn best_split_position_for_axis<V: LeafShape<P, DIM>>(&self, axis: usize, children: &mut Vec<V>) ->(P, (usize, usize, usize)) {
         let mut margin:P = Zero::zero();
         let mut d_area:P = Float::max_value();
         let mut d_overlap:P = Float::max_value();
@@ -223,10 +223,10 @@ impl<P, DIM, LSHAPE, T> RStarInsert<P, DIM, LSHAPE, T>
 
                 let (left, right) = children.split_at(k);
                 for child in left {
-                    child.expand_rect_to_fit(&mut r1);
+                    child.expand_mbr_to_fit(&mut r1);
                 }
                 for child in right {
-                    child.expand_rect_to_fit(&mut r2);
+                    child.expand_mbr_to_fit(&mut r2);
                 }
 
                 // (I)
@@ -234,7 +234,7 @@ impl<P, DIM, LSHAPE, T> RStarInsert<P, DIM, LSHAPE, T>
                 // (II)
                 margin += r1.margin() + r2.margin();
                 // (III)
-                let overlap = r1.area_overlapped_with_rect(&r2);
+                let overlap = r1.area_overlapped_with_mbr(&r2);
 
                 // CSI1
                 if (overlap, area) < (d_overlap, d_area) {
@@ -248,7 +248,7 @@ impl<P, DIM, LSHAPE, T> RStarInsert<P, DIM, LSHAPE, T>
         (margin, (axis, d_edge, d_index))
     }
 
-    fn split<V: Shape<P, DIM>>(&self, mbr: &mut Rect<P, DIM>, children: &mut Vec<V>) -> (Rect<P, DIM>, Vec<V>) {
+    fn split<V: LeafShape<P, DIM>>(&self, mbr: &mut Rect<P, DIM>, children: &mut Vec<V>) -> (Rect<P, DIM>, Vec<V>) {
         // S1 & S2
         let (s_axis, s_edge, s_index) = Range{start: 0, end: DIM::to_usize()}
             // CSA1
@@ -267,16 +267,16 @@ impl<P, DIM, LSHAPE, T> RStarInsert<P, DIM, LSHAPE, T>
         *mbr = Rect::max_inverted();
         let mut split_mbr = Rect::max_inverted();
         for child in &*children {
-            child.expand_rect_to_fit(mbr);
+            child.expand_mbr_to_fit(mbr);
         }
         for split_child in &split_children {
-            split_child.expand_rect_to_fit(&mut split_mbr);
+            split_child.expand_mbr_to_fit(&mut split_mbr);
         }
         (split_mbr, split_children)
     }
 
     //OT1
-    fn handle_overflow(&self, level: &mut MbrNode<P, DIM, LSHAPE, T>, at_root: bool, force_split: bool) -> InsertResult<P, DIM, LSHAPE, T> {
+    fn handle_overflow(&self, level: &mut MbrNode<P, DIM, LS, T>, at_root: bool, force_split: bool) -> InsertResult<P, DIM, LS, T> {
         if !at_root && !force_split {
             match *level {
                 MbrNode::Leaves{ref mut mbr, ref mut children} => return InsertResult::Reinsert(self.split_for_reinsert(mbr, children)),
@@ -305,9 +305,9 @@ impl<P, DIM, LSHAPE, T> RStarInsert<P, DIM, LSHAPE, T>
         }
     }
 
-    fn handle_split_root(&self, root: MbrNode<P, DIM, LSHAPE, T>, split: MbrNode<P, DIM, LSHAPE, T>) -> MbrNode<P, DIM, LSHAPE, T> {
+    fn handle_split_root(&self, root: MbrNode<P, DIM, LS, T>, split: MbrNode<P, DIM, LS, T>) -> MbrNode<P, DIM, LS, T> {
         let mut split_mbr = Rect::max_inverted();
-        root.expand_rect_to_fit(&mut split_mbr);
+        root.expand_mbr_to_fit(&mut split_mbr);
         let mut split_children = Vec::new();
         split_children.push(root);
         split_children.push(split);
@@ -315,12 +315,12 @@ impl<P, DIM, LSHAPE, T> RStarInsert<P, DIM, LSHAPE, T>
     }
 }
 
-impl<P, DIM, LSHAPE, T> IndexInsert<P, DIM, LSHAPE, T> for RStarInsert<P, DIM, LSHAPE, T>
+impl<P, DIM, LS, T> IndexInsert<P, DIM, LS, T> for RStarInsert<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
-        LSHAPE: Shape<P, DIM>,
+        LS: LeafShape<P, DIM>,
 {
-    fn insert_into_root(&self, mut root: MbrNode<P, DIM, LSHAPE, T>, leaf: Leaf<P, DIM, LSHAPE, T>) -> MbrNode<P, DIM, LSHAPE, T> {
+    fn insert_into_root(&self, mut root: MbrNode<P, DIM, LS, T>, leaf: Leaf<P, DIM, LS, T>) -> MbrNode<P, DIM, LS, T> {
         let insert_results = self.insert_into_level(&mut root, leaf, FORCE_SPLIT, DONT_FORCE_SPLIT);
         match insert_results {
             InsertResult::Split(child) => {
@@ -345,6 +345,14 @@ impl<P, DIM, LSHAPE, T> IndexInsert<P, DIM, LSHAPE, T> for RStarInsert<P, DIM, L
 
     fn preferred_min(&self) -> usize {
         self.preferred_min
+    }
+
+    fn new_leaves(&self) -> MbrNode<P, DIM, LS, T> {
+        MbrNode::new_leaves()
+    }
+
+    fn new_no_alloc_leaves(&self) -> MbrNode<P, DIM, LS, T> {
+        MbrNode::new_no_alloc()
     }
 }
 

@@ -13,7 +13,9 @@ The march to 0.1.0:
 - [x] Minimum documentation
 - [x] Tests
 - [x] Benchmarks all the things
-- [ ] Better documentation
+- [x] Rename Shape -> LeafShape, LSHAPE -> LS
+- [x] Prepare InsertIndexes pooling leaves
+- [x] Better documentation(ish?)
 - [x] Polish code for crates.io debut
 - [ ] Publish to crates.io
 
@@ -23,6 +25,7 @@ The march to 0.1.0:
 - [ ] Macro so users can create their own Shapes enum
 - [ ] Move the tree iterator code into macros?
 - [ ] R-Tree, R+Tree: implement, document, test, and benchmark
+- [ ] Performance improvement: Remove recursion
 - [ ] Performance improvement: Remove UnpackRwLocks and PackRwLocks requirement
 - [ ] Performance improvement: Use lifeguard with MbrNode
 

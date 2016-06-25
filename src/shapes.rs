@@ -119,12 +119,11 @@ impl<P, DIM> Rect<P, DIM>
         Rect{edges: edges}
     }
 
-// TODO: I'm not sure if I like this
-// New Rect from corners
+/// New Rect from corners
     pub fn from_corners(x: GenericArray<P, DIM>, y: GenericArray<P, DIM>) -> Rect<P, DIM>{
         let mut edges = Rect::max_inverted();
-        Point::new(x).expand_rect_to_fit(&mut edges);
-        Point::new(y).expand_rect_to_fit(&mut edges);
+        Point::new(x).expand_mbr_to_fit(&mut edges);
+        Point::new(y).expand_mbr_to_fit(&mut edges);
         edges
     }
 
@@ -200,12 +199,10 @@ pub enum Shapes<P, DIM>
 
 /// The minimum functionality required to insert a shape into a `MbrMap`
 /// Until the rust compiler allows compile-time generic integers, the generics here will be kinda painful
-/// The parameter 'edges' represents the expanse of the rectangle in that dimension
-/// A rectangle whose corners are at (x1, y1), (x2, y2) will have the corresponding edges: (x1, x2), (y1, y2)
 ///
-/// All operations should assume self.dim() == edges.len()
-
-pub trait Shape<P, DIM: ArrayLength<P> + ArrayLength<(P, P)>> {
+/// The parameter `mbr` represents a minimum bounding rectangle.
+/// An mbr whose corners are at (x1, y1), (x2, y2) will have the corresponding edges: (x1, x2), (y1, y2)
+pub trait LeafShape<P, DIM: ArrayLength<P> + ArrayLength<(P, P)>> {
     /// The shape's dimension count
     fn dim(&self) -> usize;
 
@@ -218,24 +215,24 @@ pub trait Shape<P, DIM: ArrayLength<P> + ArrayLength<(P, P)>> {
     /// the maximum extent for a given axis
     fn max_for_axis(&self, dim: usize) -> P;
 
-    /// Expand the rectangle to minimally fit the shape
-    fn expand_rect_to_fit(&self, edges: &mut Rect<P, DIM>);
+    /// Expand the mbr to minimally fit the leaf
+    fn expand_mbr_to_fit(&self, mbr: &mut Rect<P, DIM>);
 
-    /// Determine the distance from the rectangle's center
-    fn distance_from_rect_center(&self, edges: &Rect<P, DIM>) -> P;
+    /// Determine the distance from the mbr's center
+    fn distance_from_mbr_center(&self, mbr: &Rect<P, DIM>) -> P;
 
-    /// Determine if the shape is completely contained in the rectangle
-    fn contained_by_rect(&self, edges: &Rect<P, DIM>) -> bool;
+    /// Determine if the leaf is completely contained in the mbr
+    fn contained_by_mbr(&self, mbr: &Rect<P, DIM>) -> bool;
 
-    /// Determine if the shape overlaps the rectangle
-    fn overlapped_by_rect(&self, edges: &Rect<P, DIM>) -> bool;
+    /// Determine if the leaf overlaps the mbr
+    fn overlapped_by_mbr(&self, mbr: &Rect<P, DIM>) -> bool;
 
-    /// Determines the area shared with the rectangle
-    /// In cases where the shape and rect overlap, but the shape has no area (point or a line, for example), return 0
-    fn area_overlapped_with_rect(&self, edges: &Rect<P, DIM>) -> P;
+    /// Determines the area shared with the rectangle.
+    /// In cases where the leaf and mbr overlap, but the leaf has no area (point or a line, for example), return 0
+    fn area_overlapped_with_mbr(&self, mbr: &Rect<P, DIM>) -> P;
 }
 
-impl<P, DIM> Shape<P, DIM> for Point<P, DIM>
+impl<P, DIM> LeafShape<P, DIM> for Point<P, DIM>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
     DIM: ArrayLength<P> + ArrayLength<(P,P)>
 {
@@ -255,27 +252,27 @@ impl<P, DIM> Shape<P, DIM> for Point<P, DIM>
         *self.coords.get(dim).unwrap()
     }
 
-    fn expand_rect_to_fit(&self, edges: &mut Rect<P, DIM>) {
-        for (&mut(ref mut x, ref mut y), &z) in izip!(edges.deref_mut(), self.deref()){
+    fn expand_mbr_to_fit(&self, mbr: &mut Rect<P, DIM>) {
+        for (&mut(ref mut x, ref mut y), &z) in izip!(mbr.deref_mut(), self.deref()){
             *x = x.min(z);
             *y = y.max(z);
         }
     }
 
-    fn distance_from_rect_center(&self, edges: &Rect<P, DIM>) -> P {
+    fn distance_from_mbr_center(&self, mbr: &Rect<P, DIM>) -> P {
         let two = FromPrimitive::from_usize(2).unwrap();
-        let dist: P = izip!(edges.deref(), self.deref())
+        let dist: P = izip!(mbr.deref(), self.deref())
             .fold(Zero::zero(),
                 |distance, (&(x, y), &z)| distance + pow((((x + y)/two) - z), 2));
         dist.sqrt()
     }
 
-    fn contained_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
-        self.overlapped_by_rect(edges)
+    fn contained_by_mbr(&self, mbr: &Rect<P, DIM>) -> bool {
+        self.overlapped_by_mbr(mbr)
     }
 
-    fn overlapped_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
-        for (&(x, y), &z) in izip!(edges.deref(), self.deref()){
+    fn overlapped_by_mbr(&self, mbr: &Rect<P, DIM>) -> bool {
+        for (&(x, y), &z) in izip!(mbr.deref(), self.deref()){
             if z < x ||  y < z {
                 return false;
             }
@@ -284,12 +281,12 @@ impl<P, DIM> Shape<P, DIM> for Point<P, DIM>
     }
 
     #[allow(unused_variables)]
-    fn area_overlapped_with_rect(&self, edges: &Rect<P, DIM>) -> P {
+    fn area_overlapped_with_mbr(&self, mbr: &Rect<P, DIM>) -> P {
         Zero::zero()
     }
 }
 
-impl<P, DIM> Shape<P, DIM> for LineSegment<P, DIM>
+impl<P, DIM> LeafShape<P, DIM> for LineSegment<P, DIM>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
     DIM: ArrayLength<P> + ArrayLength<(P,P)>
 {
@@ -309,34 +306,34 @@ impl<P, DIM> Shape<P, DIM> for LineSegment<P, DIM>
         self.x.coords.get(dim).unwrap().max(*self.y.coords.get(dim).unwrap())
     }
 
-    fn expand_rect_to_fit(&self, edges: &mut Rect<P, DIM>) {
-        self.x.expand_rect_to_fit(edges);
-        self.y.expand_rect_to_fit(edges);
+    fn expand_mbr_to_fit(&self, mbr: &mut Rect<P, DIM>) {
+        self.x.expand_mbr_to_fit(mbr);
+        self.y.expand_mbr_to_fit(mbr);
     }
 
-    fn distance_from_rect_center(&self, edges: &Rect<P, DIM>) -> P {
+    fn distance_from_mbr_center(&self, mbr: &Rect<P, DIM>) -> P {
         let two = FromPrimitive::from_usize(2).unwrap();
-        let dist: P = izip!(edges.deref(), self.x.deref(), self.y.deref())
+        let dist: P = izip!(mbr.deref(), self.x.deref(), self.y.deref())
             .fold(Zero::zero(),
                 |distance, (&(x1, y1), &x2, &y2)| distance + pow(((x1 + y1)/two - (x2 + y2)/two), 2));
         dist.sqrt()
     }
 
-    fn contained_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
-        self.x.contained_by_rect(edges) && self.y.contained_by_rect(edges)
+    fn contained_by_mbr(&self, mbr: &Rect<P, DIM>) -> bool {
+        self.x.contained_by_mbr(mbr) && self.y.contained_by_mbr(mbr)
     }
 
-    fn overlapped_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
-        self.x.overlapped_by_rect(edges) || self.y.overlapped_by_rect(edges)
+    fn overlapped_by_mbr(&self, mbr: &Rect<P, DIM>) -> bool {
+        self.x.overlapped_by_mbr(mbr) || self.y.overlapped_by_mbr(mbr)
     }
 
     #[allow(unused_variables)]
-    fn area_overlapped_with_rect(&self, edges: &Rect<P, DIM>) -> P {
+    fn area_overlapped_with_mbr(&self, mbr: &Rect<P, DIM>) -> P {
         Zero::zero()
     }
 }
 
-impl<P, DIM> Shape<P, DIM> for Rect<P, DIM>
+impl<P, DIM> LeafShape<P, DIM> for Rect<P, DIM>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>
 {
@@ -359,24 +356,24 @@ impl<P, DIM> Shape<P, DIM> for Rect<P, DIM>
         self.edges.get(dim).unwrap().1
     }
 
-    fn expand_rect_to_fit(&self, edges: &mut Rect<P, DIM>) {
-        for (&mut (ref mut x1, ref mut y1), &(x2, y2)) in izip!(edges.deref_mut(), self.deref()) {
+    fn expand_mbr_to_fit(&self, mbr: &mut Rect<P, DIM>) {
+        for (&mut (ref mut x1, ref mut y1), &(x2, y2)) in izip!(mbr.deref_mut(), self.deref()) {
             *x1 = x1.min(x2);
             *y1 = y1.max(y2);
         }
     }
 
-    fn distance_from_rect_center(&self, edges: &Rect<P, DIM>) -> P {
+    fn distance_from_mbr_center(&self, mbr: &Rect<P, DIM>) -> P {
         let two = FromPrimitive::from_usize(2).unwrap();
-        let dist: P = izip!(edges.deref(), self.deref())
+        let dist: P = izip!(mbr.deref(), self.deref())
             .fold(Zero::zero(), |distance, (&(x1, y1), &(x2, y2))| {
                 distance + pow(((x1 + y1) / two - (x2 + y2) / two), 2)
             });
         dist.sqrt()
     }
 
-    fn contained_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
-        for (&(x1, y1), &(x2, y2)) in izip!(edges.deref(), self.deref()) {
+    fn contained_by_mbr(&self, mbr: &Rect<P, DIM>) -> bool {
+        for (&(x1, y1), &(x2, y2)) in izip!(mbr.deref(), self.deref()) {
             if x2 < x1 || y1 < y2 {
                 return false;
             }
@@ -384,8 +381,8 @@ impl<P, DIM> Shape<P, DIM> for Rect<P, DIM>
         true
     }
 
-    fn overlapped_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
-        for (&(x1, y1), &(x2, y2)) in izip!(edges.deref(), self.deref()) {
+    fn overlapped_by_mbr(&self, mbr: &Rect<P, DIM>) -> bool {
+        for (&(x1, y1), &(x2, y2)) in izip!(mbr.deref(), self.deref()) {
             if !(x1 < y2) || !(x2 < y1) {
                 return false;
             }
@@ -393,15 +390,15 @@ impl<P, DIM> Shape<P, DIM> for Rect<P, DIM>
         true
     }
 
-    fn area_overlapped_with_rect(&self, edges: &Rect<P, DIM>) -> P {
-        izip!(edges.deref(), self.deref()).fold(One::one(), |area, (&(x1, y1), &(x2, y2))| {
+    fn area_overlapped_with_mbr(&self, mbr: &Rect<P, DIM>) -> P {
+        izip!(mbr.deref(), self.deref()).fold(One::one(), |area, (&(x1, y1), &(x2, y2))| {
             area * (y1.min(y2) - x1.max(x2)).max(Zero::zero())
         })
     }
 
 }
 
-impl<P, DIM> Shape<P, DIM> for Shapes<P, DIM>
+impl<P, DIM> LeafShape<P, DIM> for Shapes<P, DIM>
 where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
     DIM: ArrayLength<P> + ArrayLength<(P,P)>
 {
@@ -438,43 +435,43 @@ where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPr
         }
     }
 
-    fn expand_rect_to_fit(&self, edges: &mut Rect<P, DIM>) {
+    fn expand_mbr_to_fit(&self, mbr: &mut Rect<P, DIM>) {
         match *self {
-            Shapes::Point(ref point) => point.expand_rect_to_fit(edges),
-            Shapes::LineSegment(ref linesegment) => linesegment.expand_rect_to_fit(edges),
-            Shapes::Rect(ref rect) => rect.expand_rect_to_fit(edges)
+            Shapes::Point(ref point) => point.expand_mbr_to_fit(mbr),
+            Shapes::LineSegment(ref linesegment) => linesegment.expand_mbr_to_fit(mbr),
+            Shapes::Rect(ref rect) => rect.expand_mbr_to_fit(mbr)
         }
     }
 
-    fn distance_from_rect_center(&self, edges: &Rect<P, DIM>) -> P {
+    fn distance_from_mbr_center(&self, mbr: &Rect<P, DIM>) -> P {
         match *self {
-            Shapes::Point(ref point) => point.distance_from_rect_center(edges),
-            Shapes::LineSegment(ref linesegment) => linesegment.distance_from_rect_center(edges),
-            Shapes::Rect(ref rect) => rect.distance_from_rect_center(edges)
+            Shapes::Point(ref point) => point.distance_from_mbr_center(mbr),
+            Shapes::LineSegment(ref linesegment) => linesegment.distance_from_mbr_center(mbr),
+            Shapes::Rect(ref rect) => rect.distance_from_mbr_center(mbr)
         }
     }
 
-    fn contained_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
+    fn contained_by_mbr(&self, mbr: &Rect<P, DIM>) -> bool {
         match *self {
-            Shapes::Point(ref point) => point.contained_by_rect(edges),
-            Shapes::LineSegment(ref linesegment) => linesegment.contained_by_rect(edges),
-            Shapes::Rect(ref rect) => rect.contained_by_rect(edges)
+            Shapes::Point(ref point) => point.contained_by_mbr(mbr),
+            Shapes::LineSegment(ref linesegment) => linesegment.contained_by_mbr(mbr),
+            Shapes::Rect(ref rect) => rect.contained_by_mbr(mbr)
         }
     }
 
-    fn overlapped_by_rect(&self, edges: &Rect<P, DIM>) -> bool {
+    fn overlapped_by_mbr(&self, mbr: &Rect<P, DIM>) -> bool {
         match *self {
-            Shapes::Point(ref point) => point.overlapped_by_rect(edges),
-            Shapes::LineSegment(ref linesegment) => linesegment.overlapped_by_rect(edges),
-            Shapes::Rect(ref rect) => rect.overlapped_by_rect(edges)
+            Shapes::Point(ref point) => point.overlapped_by_mbr(mbr),
+            Shapes::LineSegment(ref linesegment) => linesegment.overlapped_by_mbr(mbr),
+            Shapes::Rect(ref rect) => rect.overlapped_by_mbr(mbr)
         }
     }
 
-    fn area_overlapped_with_rect(&self, edges: &Rect<P, DIM>) -> P {
+    fn area_overlapped_with_mbr(&self, mbr: &Rect<P, DIM>) -> P {
         match *self {
-            Shapes::Point(ref point) => point.area_overlapped_with_rect(edges),
-            Shapes::LineSegment(ref linesegment) => linesegment.area_overlapped_with_rect(edges),
-            Shapes::Rect(ref rect) => rect.area_overlapped_with_rect(edges)
+            Shapes::Point(ref point) => point.area_overlapped_with_mbr(mbr),
+            Shapes::LineSegment(ref linesegment) => linesegment.area_overlapped_with_mbr(mbr),
+            Shapes::Rect(ref rect) => rect.area_overlapped_with_mbr(mbr)
         }
     }
 }
@@ -516,32 +513,32 @@ mod tests {
             assert_relative_eq!(*item, zero.min_for_axis(i));
             assert_relative_eq!(*item, zero.max_for_axis(i));
         }
-        let mut bounding_rect = Rect::max_inverted();
-        // expand_rect_to_fit
-        zero.expand_rect_to_fit(&mut bounding_rect);
-        one.expand_rect_to_fit(&mut bounding_rect);
+        let mut bounding_mbr = Rect::max_inverted();
+        // expand_mbr_to_fit
+        zero.expand_mbr_to_fit(&mut bounding_mbr);
+        one.expand_mbr_to_fit(&mut bounding_mbr);
         for (i, (x, y)) in izip!(&ZERO, &ONE).enumerate() {
-            assert_relative_eq!(*x, bounding_rect.min_for_axis(i));
-            assert_relative_eq!(*y, bounding_rect.max_for_axis(i));
+            assert_relative_eq!(*x, bounding_mbr.min_for_axis(i));
+            assert_relative_eq!(*y, bounding_mbr.max_for_axis(i));
         }
 
-        // distance_from_rect_center
+        // distance_from_mbr_center
         assert_relative_eq!(EXPECTED_DISTANCE,
-                            zero.distance_from_rect_center(&bounding_rect),
+                            zero.distance_from_mbr_center(&bounding_mbr),
                             max_relative = 0.00000001);
 
-        // contained_by_rect
-        assert!(zero.contained_by_rect(&bounding_rect));
-        assert!(one.contained_by_rect(&bounding_rect));
-        assert!(!neg_one.contained_by_rect(&bounding_rect));
+        // contained_by_mbr
+        assert!(zero.contained_by_mbr(&bounding_mbr));
+        assert!(one.contained_by_mbr(&bounding_mbr));
+        assert!(!neg_one.contained_by_mbr(&bounding_mbr));
 
-        // overlapped_by_rect
-        assert!(zero.overlapped_by_rect(&bounding_rect));
-        assert!(one.overlapped_by_rect(&bounding_rect));
-        assert!(!neg_one.overlapped_by_rect(&bounding_rect));
+        // overlapped_by_mbr
+        assert!(zero.overlapped_by_mbr(&bounding_mbr));
+        assert!(one.overlapped_by_mbr(&bounding_mbr));
+        assert!(!neg_one.overlapped_by_mbr(&bounding_mbr));
 
-        // area_overlapped_with_rect
-        assert_relative_eq!(0.0f64, zero.area_overlapped_with_rect(&bounding_rect));
+        // area_overlapped_with_mbr
+        assert_relative_eq!(0.0f64, zero.area_overlapped_with_mbr(&bounding_mbr));
     }
 
     #[test]
@@ -568,32 +565,32 @@ mod tests {
             assert_relative_eq!(*y, zero_one.max_for_axis(i));
         }
 
-        let mut bounding_rect = Rect::max_inverted();
+        let mut bounding_mbr = Rect::max_inverted();
 
-        // expand_rect_to_fit
-        zero_one.expand_rect_to_fit(&mut bounding_rect);
+        // expand_mbr_to_fit
+        zero_one.expand_mbr_to_fit(&mut bounding_mbr);
         for (i, (x, y)) in izip!(&ZERO, &ONE).enumerate() {
-            assert_relative_eq!(*x, bounding_rect.min_for_axis(i));
-            assert_relative_eq!(*y, bounding_rect.max_for_axis(i));
+            assert_relative_eq!(*x, bounding_mbr.min_for_axis(i));
+            assert_relative_eq!(*y, bounding_mbr.max_for_axis(i));
         }
 
-        // distance_from_rect_center
+        // distance_from_mbr_center
         assert_relative_eq!(EXPECTED_DISTANCE,
-                            neg_one_one.distance_from_rect_center(&bounding_rect),
+                            neg_one_one.distance_from_mbr_center(&bounding_mbr),
                             max_relative = 0.00000001);
 
-        // contained_by_rect
-        assert!(zero_one.contained_by_rect(&bounding_rect));
-        assert!(!neg_one_one.contained_by_rect(&bounding_rect));
-        assert!(!neg_two_neg_one.contained_by_rect(&bounding_rect));
+        // contained_by_mbr
+        assert!(zero_one.contained_by_mbr(&bounding_mbr));
+        assert!(!neg_one_one.contained_by_mbr(&bounding_mbr));
+        assert!(!neg_two_neg_one.contained_by_mbr(&bounding_mbr));
 
-        // overlapped_by_rect
-        assert!(zero_one.overlapped_by_rect(&bounding_rect));
-        assert!(neg_one_one.overlapped_by_rect(&bounding_rect));
-        assert!(!neg_two_neg_one.overlapped_by_rect(&bounding_rect));
+        // overlapped_by_mbr
+        assert!(zero_one.overlapped_by_mbr(&bounding_mbr));
+        assert!(neg_one_one.overlapped_by_mbr(&bounding_mbr));
+        assert!(!neg_two_neg_one.overlapped_by_mbr(&bounding_mbr));
 
-        // area_overlapped_with_rect
-        assert_relative_eq!(0.0f64, zero_one.area_overlapped_with_rect(&bounding_rect));
+        // area_overlapped_with_mbr
+        assert_relative_eq!(0.0f64, zero_one.area_overlapped_with_mbr(&bounding_mbr));
     }
 
     #[test]
@@ -624,32 +621,32 @@ mod tests {
             assert_relative_eq!(*y, zero_one.max_for_axis(i));
         }
 
-        let mut bounding_rect = Rect::max_inverted();
-        // expand_rect_to_fit
-        zero_one.expand_rect_to_fit(&mut bounding_rect);
+        let mut bounding_mbr = Rect::max_inverted();
+        // expand_mbr_to_fit
+        zero_one.expand_mbr_to_fit(&mut bounding_mbr);
         for (i, (x, y)) in izip!(&ZERO, &ONE).enumerate() {
-            assert_relative_eq!(*x, bounding_rect.min_for_axis(i));
-            assert_relative_eq!(*y, bounding_rect.max_for_axis(i));
+            assert_relative_eq!(*x, bounding_mbr.min_for_axis(i));
+            assert_relative_eq!(*y, bounding_mbr.max_for_axis(i));
         }
 
-        // distance_from_rect_center
+        // distance_from_mbr_center
         assert_relative_eq!(EXPECTED_DISTANCE,
-                            neg_one_one.distance_from_rect_center(&bounding_rect),
+                            neg_one_one.distance_from_mbr_center(&bounding_mbr),
                             max_relative = 0.00000001);
 
-        // contained_by_rect
-        assert!(zero_one.contained_by_rect(&bounding_rect));
-        assert!(!neg_one_one.contained_by_rect(&bounding_rect));
-        assert!(!neg_two_neg_one.contained_by_rect(&bounding_rect));
+        // contained_by_mbr
+        assert!(zero_one.contained_by_mbr(&bounding_mbr));
+        assert!(!neg_one_one.contained_by_mbr(&bounding_mbr));
+        assert!(!neg_two_neg_one.contained_by_mbr(&bounding_mbr));
 
-        // overlapped_by_rect
-        assert!(zero_one.overlapped_by_rect(&bounding_rect));
-        assert!(neg_one_one.overlapped_by_rect(&bounding_rect));
-        assert!(!neg_two_neg_one.overlapped_by_rect(&bounding_rect));
+        // overlapped_by_mbr
+        assert!(zero_one.overlapped_by_mbr(&bounding_mbr));
+        assert!(neg_one_one.overlapped_by_mbr(&bounding_mbr));
+        assert!(!neg_two_neg_one.overlapped_by_mbr(&bounding_mbr));
 
-        // area_overlapped_with_rect
-        assert_relative_eq!(1.0f64, zero_one.area_overlapped_with_rect(&bounding_rect));
+        // area_overlapped_with_mbr
+        assert_relative_eq!(1.0f64, zero_one.area_overlapped_with_mbr(&bounding_mbr));
         assert_relative_eq!(1.0f64,
-                            neg_one_one.area_overlapped_with_rect(&bounding_rect));
+                            neg_one_one.area_overlapped_with_mbr(&bounding_mbr));
     }
 }
