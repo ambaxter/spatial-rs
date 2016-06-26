@@ -14,7 +14,7 @@ use std::fmt::Debug;
 use generic_array::ArrayLength;
 use std::rc::Rc;
 use tree::mbr::index::{IndexInsert, IndexRemove};
-use tree::mbr::{MbrLeafShape, MbrLeaf, MbrRectQuery, MbrQuery, MbrNode};
+use tree::mbr::{MbrLeafGeometry, MbrLeaf, MbrRectQuery, MbrQuery, MbrNode};
 use std::ops::Deref;
 use std::mem;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
@@ -34,7 +34,7 @@ pub struct MbrMap<P, DIM, LS, I, R, T>
 impl<P, DIM, LS, I, R, T> MbrMap<P, DIM, LS, I, R, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
-          LS: MbrLeafShape<P, DIM>,
+          LS: MbrLeafGeometry<P, DIM>,
           I: IndexInsert<P, DIM, LS, T>,
           R: IndexRemove<P, DIM, LS, T, I>,
 {
@@ -126,7 +126,7 @@ struct LevelIter<'tree, P, DIM, LS, T, Q>
 impl<'tree, P, DIM, LS, T, Q> LevelIter<'tree, P, DIM, LS, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          LS: MbrLeafShape<P, DIM> + 'tree,
+          LS: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LS, T>
 {
@@ -168,7 +168,7 @@ impl<'tree, P, DIM, LS, T, Q> LevelIter<'tree, P, DIM, LS, T, Q>
 impl<'tree, P, DIM, LS, T, Q> Iterator for LevelIter<'tree, P, DIM, LS, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          LS: MbrLeafShape<P, DIM> + 'tree,
+          LS: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LS, T> 
 {
@@ -222,7 +222,7 @@ pub struct Iter<'tree, P, DIM, LS, T, Q>
 impl<'tree, P, DIM, LS, T, Q> Iter<'tree, P, DIM, LS, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          LS: MbrLeafShape<P, DIM> + 'tree,
+          LS: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LS, T>
 {
@@ -256,7 +256,7 @@ impl<'tree, P, DIM, LS, T, Q> Iter<'tree, P, DIM, LS, T, Q>
 impl<'tree, P, DIM, LS, T, Q> Iterator for Iter<'tree, P, DIM, LS, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          LS: MbrLeafShape<P, DIM> + 'tree,
+          LS: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LS, T>
 {
@@ -308,7 +308,7 @@ pub struct IterMut<'tree, P, DIM, LS, T, Q>
 impl<'tree, P, DIM, LS, T, Q> IterMut<'tree, P, DIM, LS, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          LS: MbrLeafShape<P, DIM> + 'tree,
+          LS: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LS, T>
 {
@@ -342,7 +342,7 @@ impl<'tree, P, DIM, LS, T, Q> IterMut<'tree, P, DIM, LS, T, Q>
 impl<'tree, P, DIM, LS, T, Q> Iterator for IterMut<'tree, P, DIM, LS, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
-          LS: MbrLeafShape<P, DIM>,
+          LS: MbrLeafGeometry<P, DIM>,
           T: 'tree,
           Q: MbrQuery<P, DIM, LS, T>
 {

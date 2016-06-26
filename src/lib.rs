@@ -23,7 +23,7 @@ mod geometry;
 mod tree;
 mod vecext;
 
-pub use tree::mbr::{MbrLeafShape, MbrMap, MbrRectQuery};
+pub use tree::mbr::{MbrLeafGeometry, MbrMap, MbrRectQuery};
 use tree::mbr::index::IndexInsert;
 use tree::mbr::index::r::RRemove;
 use tree::mbr::index::rstar::RStarInsert;
@@ -49,7 +49,7 @@ pub type RStarTree<P, DIM, LS, T> =  MbrMap<P, DIM, LS, RStarInsert<P, DIM, LS, 
 impl<P, DIM, LS, T> RStar<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
-          LS: MbrLeafShape<P, DIM>,
+          LS: MbrLeafGeometry<P, DIM>,
 {
 /// Create a new R* tree with min and max children lengths set to 25 and 64, respectively
     pub fn new() -> RStarTree<P, DIM, LS, T> {

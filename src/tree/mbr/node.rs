@@ -7,7 +7,7 @@
 
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
-use tree::mbr::{MbrLeaf, MbrLeafShape};
+use tree::mbr::{MbrLeaf, MbrLeafGeometry};
 use geometry::Rect;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
@@ -33,7 +33,7 @@ pub enum MbrNode<P, DIM, LS, T>
 impl<P, DIM, LS, T> MbrNode<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LS: MbrLeafShape<P, DIM> {
+          LS: MbrLeafGeometry<P, DIM> {
 
 /// Create an empty leaf level
     pub fn new_leaves() -> MbrNode<P, DIM, LS, T> {
@@ -93,10 +93,10 @@ impl<P, DIM, LS, T> MbrNode<P, DIM, LS, T>
 }
 
 
-impl<P, DIM, LS, T> MbrLeafShape<P, DIM> for MbrNode<P, DIM, LS, T>
+impl<P, DIM, LS, T> MbrLeafGeometry<P, DIM> for MbrNode<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LS: MbrLeafShape<P, DIM> {
+          LS: MbrLeafGeometry<P, DIM> {
 
     fn dim(&self) -> usize {
         self.mbr().dim()

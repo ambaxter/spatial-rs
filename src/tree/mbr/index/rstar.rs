@@ -8,7 +8,7 @@
 use num::{Zero, Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign, Range, Deref};
 use tree::mbr::index::{IndexInsert, D_MAX, AT_ROOT, NOT_AT_ROOT, FORCE_SPLIT, DONT_FORCE_SPLIT};
-use tree::mbr::{MbrLeaf, MbrLeafShape, MbrNode};
+use tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode};
 use geometry::Rect;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -79,7 +79,7 @@ pub struct RStarInsert<P, DIM, LS, T>
 impl<P, DIM, LS, T> RStarInsert<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
-        LS: MbrLeafShape<P, DIM>,
+        LS: MbrLeafGeometry<P, DIM>,
 {
 
     pub fn new() -> RStarInsert<P, DIM, LS, T> {
@@ -202,7 +202,7 @@ impl<P, DIM, LS, T> RStarInsert<P, DIM, LS, T>
 
 
     // fn best_position_for_axis -> (margin, (axis, edge, index))
-    fn best_split_position_for_axis<V: MbrLeafShape<P, DIM>>(&self, axis: usize, children: &mut Vec<V>) ->(P, (usize, usize, usize)) {
+    fn best_split_position_for_axis<V: MbrLeafGeometry<P, DIM>>(&self, axis: usize, children: &mut Vec<V>) ->(P, (usize, usize, usize)) {
         let mut margin:P = Zero::zero();
         let mut d_area:P = Float::max_value();
         let mut d_overlap:P = Float::max_value();
@@ -247,7 +247,7 @@ impl<P, DIM, LS, T> RStarInsert<P, DIM, LS, T>
         (margin, (axis, d_edge, d_index))
     }
 
-    fn split<V: MbrLeafShape<P, DIM>>(&self, mbr: &mut Rect<P, DIM>, children: &mut Vec<V>) -> (Rect<P, DIM>, Vec<V>) {
+    fn split<V: MbrLeafGeometry<P, DIM>>(&self, mbr: &mut Rect<P, DIM>, children: &mut Vec<V>) -> (Rect<P, DIM>, Vec<V>) {
         // S1 & S2
         let (s_axis, s_edge, s_index) = Range{start: 0, end: DIM::to_usize()}
             // CSA1
@@ -317,7 +317,7 @@ impl<P, DIM, LS, T> RStarInsert<P, DIM, LS, T>
 impl<P, DIM, LS, T> IndexInsert<P, DIM, LS, T> for RStarInsert<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
-        LS: MbrLeafShape<P, DIM>,
+        LS: MbrLeafGeometry<P, DIM>,
 {
     fn insert_into_root(&self, mut root: MbrNode<P, DIM, LS, T>, leaf: MbrLeaf<P, DIM, LS, T>) -> MbrNode<P, DIM, LS, T> {
         let insert_results = self.insert_into_level(&mut root, leaf, FORCE_SPLIT, DONT_FORCE_SPLIT);
@@ -359,7 +359,7 @@ impl<P, DIM, LS, T> IndexInsert<P, DIM, LS, T> for RStarInsert<P, DIM, LS, T>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shapes::Rect;
+    use geometry::Rect;
     use generic_array::GenericArray;
     use typenum::consts::U3;
 

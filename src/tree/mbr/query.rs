@@ -8,7 +8,7 @@
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
 use geometry::Rect;
-use tree::mbr::{MbrLeafShape, MbrLeaf, MbrNode};
+use tree::mbr::{MbrLeafGeometry, MbrLeaf, MbrNode};
 use std::fmt::Debug;
 use generic_array::ArrayLength;
 
@@ -36,7 +36,7 @@ pub enum MbrRectQuery<P, DIM>
 impl<P, DIM, LS, T> MbrQuery<P, DIM, LS, T> for MbrRectQuery<P, DIM>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LS: MbrLeafShape<P, DIM>{
+          LS: MbrLeafGeometry<P, DIM>{
 
 // Does this query accept the given leaf?
     fn accept_leaf(&self, leaf: &MbrLeaf<P, DIM, LS, T>) -> bool {

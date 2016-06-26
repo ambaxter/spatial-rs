@@ -121,7 +121,7 @@ impl<P, DIM> Rect<P, DIM>
 
 /// New Rect from corners
     pub fn from_corners(x: GenericArray<P, DIM>, y: GenericArray<P, DIM>) -> Rect<P, DIM>{
-        use tree::mbr::MbrLeafShape;
+        use tree::mbr::MbrLeafGeometry;
         let mut edges = Rect::max_inverted();
         Point::new(x).expand_mbr_to_fit(&mut edges);
         Point::new(y).expand_mbr_to_fit(&mut edges);

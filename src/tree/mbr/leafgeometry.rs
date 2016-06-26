@@ -12,12 +12,12 @@ use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 use generic_array::ArrayLength;
 
-/// The minimum functionality required to insert a shape into a `MbrMap`
+/// The minimum functionality required to insert leaf geometry into `MbrMap`
 /// Until the rust compiler allows compile-time generic integers, the generics here will be kinda painful
 ///
 /// The parameter `mbr` represents a minimum bounding rectangle.
 /// An mbr whose corners are at (x1, y1), (x2, y2) will have the corresponding edges: (x1, x2), (y1, y2)
-pub trait MbrLeafShape<P, DIM: ArrayLength<P> + ArrayLength<(P, P)>> {
+pub trait MbrLeafGeometry<P, DIM: ArrayLength<P> + ArrayLength<(P, P)>> {
     /// The shape's dimension count
     fn dim(&self) -> usize;
 
@@ -42,12 +42,12 @@ pub trait MbrLeafShape<P, DIM: ArrayLength<P> + ArrayLength<(P, P)>> {
     /// Determine if the leaf overlaps the mbr
     fn overlapped_by_mbr(&self, mbr: &Rect<P, DIM>) -> bool;
 
-    /// Determines the area shared with the rectangle.
+    /// Determines the leaf area shared with the rectangle.
     /// In cases where the leaf and mbr overlap, but the leaf has no area (point or a line, for example), return 0
     fn area_overlapped_with_mbr(&self, mbr: &Rect<P, DIM>) -> P;
 }
 
-impl<P, DIM> MbrLeafShape<P, DIM> for Point<P, DIM>
+impl<P, DIM> MbrLeafGeometry<P, DIM> for Point<P, DIM>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
     DIM: ArrayLength<P> + ArrayLength<(P,P)>
 {
@@ -101,7 +101,7 @@ impl<P, DIM> MbrLeafShape<P, DIM> for Point<P, DIM>
     }
 }
 
-impl<P, DIM> MbrLeafShape<P, DIM> for LineSegment<P, DIM>
+impl<P, DIM> MbrLeafGeometry<P, DIM> for LineSegment<P, DIM>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
     DIM: ArrayLength<P> + ArrayLength<(P,P)>
 {
@@ -148,7 +148,7 @@ impl<P, DIM> MbrLeafShape<P, DIM> for LineSegment<P, DIM>
     }
 }
 
-impl<P, DIM> MbrLeafShape<P, DIM> for Rect<P, DIM>
+impl<P, DIM> MbrLeafGeometry<P, DIM> for Rect<P, DIM>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>
 {
@@ -213,7 +213,7 @@ impl<P, DIM> MbrLeafShape<P, DIM> for Rect<P, DIM>
 
 }
 
-impl<P, DIM> MbrLeafShape<P, DIM> for Shapes<P, DIM>
+impl<P, DIM> MbrLeafGeometry<P, DIM> for Shapes<P, DIM>
 where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
     DIM: ArrayLength<P> + ArrayLength<(P,P)>
 {
@@ -296,7 +296,7 @@ where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPr
 mod tests {
     use std::ops::Deref;
     use typenum::consts::U3;
-    use shapes::{Shapes, Point, LineSegment, Rect};
+    use geometry::{Shapes, Point, LineSegment, Rect};
     use generic_array::GenericArray;
     use super::*;
 

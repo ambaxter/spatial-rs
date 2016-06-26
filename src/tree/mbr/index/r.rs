@@ -11,7 +11,7 @@ use vecext::{RetainMut, RetainAndAppend};
 use geometry::Rect;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
-use tree::mbr::{MbrNode, MbrQuery, MbrLeaf, MbrLeafShape};
+use tree::mbr::{MbrNode, MbrQuery, MbrLeaf, MbrLeafGeometry};
 use tree::mbr::index::{IndexInsert, IndexRemove, RemoveReturn, AT_ROOT, NOT_AT_ROOT};
 use std::marker::PhantomData;
 use parking_lot::RwLock;
@@ -31,7 +31,7 @@ pub struct RRemove<P, DIM, LS, T>
 impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)>,
-        LS: MbrLeafShape<P, DIM>,
+        LS: MbrLeafGeometry<P, DIM>,
 {
 
     pub fn with_min(min: usize) -> RRemove<P, DIM, LS, T> {
@@ -120,7 +120,7 @@ impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
 impl<P, DIM, LS, T, I> IndexRemove<P, DIM, LS, T, I> for RRemove<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
-        LS: MbrLeafShape<P, DIM>,
+        LS: MbrLeafGeometry<P, DIM>,
         I: IndexInsert<P, DIM, LS, T>,
 {
     fn remove_from_root<Q: MbrQuery<P, DIM, LS, T>, F: FnMut(&T) -> bool>(&self,

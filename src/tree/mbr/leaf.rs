@@ -8,7 +8,7 @@
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
 use geometry::Rect;
-use tree::mbr::MbrLeafShape;
+use tree::mbr::MbrLeafGeometry;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
 use std::marker::PhantomData;
@@ -27,7 +27,7 @@ pub struct MbrLeaf<P, DIM, LS, T>
 impl<P, DIM, LS, T> MbrLeaf<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LS: MbrLeafShape<P, DIM>
+          LS: MbrLeafGeometry<P, DIM>
 {
 /// New leaf from shape and item
     pub fn new(shape: LS, item: T) -> MbrLeaf<P, DIM, LS, T> {
@@ -48,10 +48,10 @@ impl<P, DIM, LS, T> MbrLeaf<P, DIM, LS, T>
     }
 }
 
-impl<P, DIM, LS, T> MbrLeafShape<P, DIM> for MbrLeaf<P, DIM, LS, T>
+impl<P, DIM, LS, T> MbrLeafGeometry<P, DIM> for MbrLeaf<P, DIM, LS, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LS: MbrLeafShape<P, DIM> {
+          LS: MbrLeafGeometry<P, DIM> {
 
     fn dim(&self) -> usize {
         self.shape.dim()
