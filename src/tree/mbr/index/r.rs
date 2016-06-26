@@ -18,23 +18,23 @@ use parking_lot::RwLock;
 use vecext::{PackRwLocks, UnpackRwLocks};
 use std::mem;
 
-pub struct RRemove<P, DIM, LS, T>
+pub struct RRemove<P, DIM, LG, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     min: usize,
     _p: PhantomData<P>,
     _dim: PhantomData<DIM>,
-    _ls: PhantomData<LS>,
+    _lg: PhantomData<LG>,
     _t: PhantomData<T>,
 }
 
-impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
+impl<P, DIM, LG, T> RRemove<P, DIM, LG, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)>,
-        LS: MbrLeafGeometry<P, DIM>,
+        LG: MbrLeafGeometry<P, DIM>,
 {
 
-    pub fn with_min(min: usize) -> RRemove<P, DIM, LS, T> {
+    pub fn with_min(min: usize) -> RRemove<P, DIM, LG, T> {
         assert!(min > 0, "min({:?}) must be at least 0.", min);
         RRemove{
             min: min,
@@ -46,9 +46,9 @@ impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
     }
 
 /// Removes matching leaves from a leaf level. Return true if the level should be retianed
-    fn remove_matching_leaves<Q: MbrQuery<P, DIM, LS, T>, F: FnMut(&T) -> bool>(&self, query: &Q, mbr: &mut Rect<P, DIM>, children: &mut Vec<RwLock<MbrLeaf<P, DIM, LS, T>>>,
-        removed: &mut Vec<MbrLeaf<P, DIM, LS, T>>,
-        to_reinsert: &mut Vec<MbrLeaf<P, DIM, LS, T>>,
+    fn remove_matching_leaves<Q: MbrQuery<P, DIM, LG, T>, F: FnMut(&T) -> bool>(&self, query: &Q, mbr: &mut Rect<P, DIM>, children: &mut Vec<RwLock<MbrLeaf<P, DIM, LG, T>>>,
+        removed: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
+        to_reinsert: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
         f: &mut F,
         at_root: bool) -> bool {
 
@@ -76,7 +76,7 @@ impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
     }
 
 /// Consume all child leaves and queue them for reinsert
-    fn consume_leaves_for_reinsert(&self, nodes: &mut Vec<MbrNode<P, DIM, LS, T>>, to_reinsert: &mut Vec<MbrLeaf<P, DIM, LS, T>>) {
+    fn consume_leaves_for_reinsert(&self, nodes: &mut Vec<MbrNode<P, DIM, LG, T>>, to_reinsert: &mut Vec<MbrLeaf<P, DIM, LG, T>>) {
         for node in nodes {
             match *node {
                 MbrNode::Leaves{ref mut children, ..} => to_reinsert.append(&mut mem::replace(children, Vec::with_capacity(0)).unpack_rwlocks()),
@@ -86,9 +86,9 @@ impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
     }
 
 /// Recursively remove leaves from a level. Return true if the level should be retianed
-    fn remove_leaves_from_level<Q: MbrQuery<P, DIM, LS, T>, F: FnMut(&T) -> bool>(&self, query: &Q, level: &mut MbrNode<P, DIM, LS, T>,
-        removed: &mut Vec<MbrLeaf<P, DIM, LS, T>>,
-        to_reinsert: &mut Vec<MbrLeaf<P, DIM, LS, T>>,
+    fn remove_leaves_from_level<Q: MbrQuery<P, DIM, LG, T>, F: FnMut(&T) -> bool>(&self, query: &Q, level: &mut MbrNode<P, DIM, LG, T>,
+        removed: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
+        to_reinsert: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
         f: &mut F,
         at_root: bool) -> bool {
             if !query.accept_level(level) {
@@ -117,17 +117,17 @@ impl<P, DIM, LS, T> RRemove<P, DIM, LS, T>
 }
 
 
-impl<P, DIM, LS, T, I> IndexRemove<P, DIM, LS, T, I> for RRemove<P, DIM, LS, T>
+impl<P, DIM, LG, T, I> IndexRemove<P, DIM, LG, T, I> for RRemove<P, DIM, LG, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
-        LS: MbrLeafGeometry<P, DIM>,
-        I: IndexInsert<P, DIM, LS, T>,
+        LG: MbrLeafGeometry<P, DIM>,
+        I: IndexInsert<P, DIM, LG, T>,
 {
-    fn remove_from_root<Q: MbrQuery<P, DIM, LS, T>, F: FnMut(&T) -> bool>(&self,
-        mut root: MbrNode<P, DIM, LS, T>,
+    fn remove_from_root<Q: MbrQuery<P, DIM, LG, T>, F: FnMut(&T) -> bool>(&self,
+        mut root: MbrNode<P, DIM, LG, T>,
         insert_index: &I,
         query: Q,
-        mut f: F) -> RemoveReturn<P, DIM, LS, T> {
+        mut f: F) -> RemoveReturn<P, DIM, LG, T> {
 
             if root.is_empty() {
                 (root, Vec::with_capacity(0))

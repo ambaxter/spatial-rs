@@ -23,7 +23,7 @@ mod geometry;
 mod tree;
 mod vecext;
 
-pub use tree::mbr::{MbrLeafGeometry, MbrMap, MbrRectQuery};
+pub use tree::mbr::{MbrLeafGeometry, MbrMap, MbrQuery, MbrRectQuery};
 use tree::mbr::index::IndexInsert;
 use tree::mbr::index::r::RRemove;
 use tree::mbr::index::rstar::RStarInsert;
@@ -36,37 +36,37 @@ use std::marker::PhantomData;
 
 
 /// Convenience struct for creating a new R* Tree
-pub struct RStar<P, DIM, LS, T> {
+pub struct RStar<P, DIM, LG, T> {
     _p: PhantomData<P>,
     _dim: PhantomData<DIM>,
-    _ls: PhantomData<LS>,
+    _lg: PhantomData<LG>,
     _t: PhantomData<T>,
 }
 
 /// R* Tree Type
-pub type RStarTree<P, DIM, LS, T> =  MbrMap<P, DIM, LS, RStarInsert<P, DIM, LS, T>, RRemove<P, DIM, LS, T>, T>;
+pub type RStarTree<P, DIM, LG, T> =  MbrMap<P, DIM, LG, RStarInsert<P, DIM, LG, T>, RRemove<P, DIM, LG, T>, T>;
 
-impl<P, DIM, LS, T> RStar<P, DIM, LS, T>
+impl<P, DIM, LG, T> RStar<P, DIM, LG, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
-          LS: MbrLeafGeometry<P, DIM>,
+          LG: MbrLeafGeometry<P, DIM>,
 {
 /// Create a new R* tree with min and max children lengths set to 25 and 64, respectively
-    pub fn new() -> RStarTree<P, DIM, LS, T> {
+    pub fn new() -> RStarTree<P, DIM, LG, T> {
         RStar::map_from_insert(RStarInsert::new())
     }
 
 /// Create a new R* tree with max children lengths as provided. min length will be set to 0.3 * max
-    pub fn new_with_max(max: usize) -> RStarTree<P, DIM, LS, T> {
+    pub fn new_with_max(max: usize) -> RStarTree<P, DIM, LG, T> {
         RStar::map_from_insert(RStarInsert::new_with_max(max))
     }
 
 /// Creates a mew R* tree with options as provided. min children will be set to reinsert_p.min(split_p) * max
-    pub fn new_with_options(max: usize, reinsert_p: f32, split_p: f32, choose_subtree_p: usize) -> RStarTree<P, DIM, LS, T> {
+    pub fn new_with_options(max: usize, reinsert_p: f32, split_p: f32, choose_subtree_p: usize) -> RStarTree<P, DIM, LG, T> {
         RStar::map_from_insert(RStarInsert::new_with_options(max, reinsert_p, split_p, choose_subtree_p))
     }
 
-    fn map_from_insert(rstar_insert: RStarInsert<P, DIM, LS, T>) -> RStarTree<P, DIM, LS, T> {
+    fn map_from_insert(rstar_insert: RStarInsert<P, DIM, LG, T>) -> RStarTree<P, DIM, LG, T> {
         let min = rstar_insert.preferred_min();
         MbrMap::new(rstar_insert, RRemove::with_min(min))
     }

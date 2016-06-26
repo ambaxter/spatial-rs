@@ -8,20 +8,20 @@
 pub mod mbr;
 
 // TODO: Figure this out later :/
-// pub trait SpatialMap<'tree, P, DIM, LS, LEVEL, T>
+// pub trait SpatialMap<'tree, P, DIM, LG, LEVEL, T>
 // where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
-// LS: 'tree,
+// LG: 'tree,
 // T: 'tree
 // {
 // Insert an item
-// fn insert(&mut self, shape: LS, item: T);
+// fn insert(&mut self, geometry: LG, item: T);
 //
 // Remove all items whose shapes are accepted by the query
-// fn remove<Q: SpatialQuery<P, DIM, LS, LEVEL, T>>(&mut self, query: Q) -> Vec<(LS, T)>;
+// fn remove<Q: SpatialQuery<P, DIM, LG, LEVEL, T>>(&mut self, query: Q) -> Vec<(LG, T)>;
 //
 // Remove all items whose shapes are accepted by the query and where f(&T) returns false
-// fn retain<Q, F>(&mut self, query: Q, f: F) -> Vec<(LS, T)>
-// where Q: SpatialQuery<P, DIM, LS, LEVEL, T>,
+// fn retain<Q, F>(&mut self, query: Q, f: F) -> Vec<(LG, T)>
+// where Q: SpatialQuery<P, DIM, LG, LEVEL, T>,
 // F: FnMut(&T) -> bool;
 //
 // Whether the map is empty
@@ -34,19 +34,19 @@ pub mod mbr;
 // fn clear(&mut self);
 //
 // Iter for the map
-// fn iter<ITER: Iterator<Item=(&'tree LS, &'tree T)>>(&'tree self) -> ITER;
+// fn iter<ITER: Iterator<Item=(&'tree LG, &'tree T)>>(&'tree self) -> ITER;
 //
 // IterMut for the map
-// fn iter_mut<ITERM: Iterator<Item=(&'tree LS, &'tree mut T)>>(&'tree mut self) -> ITERM;
+// fn iter_mut<ITERM: Iterator<Item=(&'tree LG, &'tree mut T)>>(&'tree mut self) -> ITERM;
 //
 // Iter for the map with a given query
 // fn iter_query<Q, ITER>(&'tree self, query: Q) -> ITER
-// where Q: SpatialQuery<P, DIM, LS, LEVEL, T>,
-// ITER: Iterator<Item=(&'tree LS, &'tree T)>;
+// where Q: SpatialQuery<P, DIM, LG, LEVEL, T>,
+// ITER: Iterator<Item=(&'tree LG, &'tree T)>;
 //
 // IterMut for the map with a given query
 // fn iter_query_mut<Q, ITERM>(&'tree mut self, query: Q) -> ITERM
-// where Q: SpatialQuery<P, DIM, LS, LEVEL, T>,
-// ITERM: Iterator<Item=(&'tree LS, &'tree mut T)>;
+// where Q: SpatialQuery<P, DIM, LG, LEVEL, T>,
+// ITERM: Iterator<Item=(&'tree LG, &'tree mut T)>;
 // }
 //

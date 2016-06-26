@@ -13,13 +13,13 @@ use std::fmt::Debug;
 use generic_array::ArrayLength;
 
 /// Query trait for navigating the tree
-pub trait MbrQuery<P, DIM, LS, T>
+pub trait MbrQuery<P, DIM, LG, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     /// Returns true if the leaf matches the query
-    fn accept_leaf(&self, leaf: &MbrLeaf<P, DIM, LS, T>) -> bool;
+    fn accept_leaf(&self, leaf: &MbrLeaf<P, DIM, LG, T>) -> bool;
     /// Returns true if the level matches the query
-    fn accept_level(&self, level: &MbrNode<P, DIM, LS, T>) -> bool;
+    fn accept_level(&self, level: &MbrNode<P, DIM, LG, T>) -> bool;
 }
 
 /// Rect based query
@@ -33,21 +33,22 @@ pub enum MbrRectQuery<P, DIM>
     Overlaps(Rect<P, DIM>),
 }
 
-impl<P, DIM, LS, T> MbrQuery<P, DIM, LS, T> for MbrRectQuery<P, DIM>
+impl<P, DIM, LG, T> MbrQuery<P, DIM, LG, T> for MbrRectQuery<P, DIM>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LS: MbrLeafGeometry<P, DIM>{
+          LG: MbrLeafGeometry<P, DIM>
+{
 
 // Does this query accept the given leaf?
-    fn accept_leaf(&self, leaf: &MbrLeaf<P, DIM, LS, T>) -> bool {
+    fn accept_leaf(&self, leaf: &MbrLeaf<P, DIM, LG, T>) -> bool {
         match *self {
-            MbrRectQuery::ContainedBy(ref query) => leaf.shape.contained_by_mbr(query),
-            MbrRectQuery::Overlaps(ref query) => leaf.shape.overlapped_by_mbr(query),
+            MbrRectQuery::ContainedBy(ref query) => leaf.geometry.contained_by_mbr(query),
+            MbrRectQuery::Overlaps(ref query) => leaf.geometry.overlapped_by_mbr(query),
         }
     }
 
 // Does this query accept the given level?
-    fn accept_level(&self, level: &MbrNode<P, DIM, LS, T>) -> bool {
+    fn accept_level(&self, level: &MbrNode<P, DIM, LG, T>) -> bool {
         match *self {
             MbrRectQuery::ContainedBy(ref query) => level.overlapped_by_mbr(query),
             MbrRectQuery::Overlaps(ref query) => level.overlapped_by_mbr(query),

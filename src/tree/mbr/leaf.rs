@@ -15,77 +15,77 @@ use std::marker::PhantomData;
 
 /// A tree leaf
 #[derive(Debug)]
-pub struct MbrLeaf<P, DIM, LS, T>
+pub struct MbrLeaf<P, DIM, LG, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
-    pub shape: LS,
+    pub geometry: LG,
     pub item: T,
     _p: PhantomData<P>,
     _dim: PhantomData<DIM>,
 }
 
-impl<P, DIM, LS, T> MbrLeaf<P, DIM, LS, T>
+impl<P, DIM, LG, T> MbrLeaf<P, DIM, LG, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LS: MbrLeafGeometry<P, DIM>
+          LG: MbrLeafGeometry<P, DIM>
 {
-/// New leaf from shape and item
-    pub fn new(shape: LS, item: T) -> MbrLeaf<P, DIM, LS, T> {
-        MbrLeaf{shape: shape, item: item, _p: PhantomData, _dim: PhantomData}
+/// New leaf from geometry and item
+    pub fn new(geometry: LG, item: T) -> MbrLeaf<P, DIM, LG, T> {
+        MbrLeaf{geometry: geometry, item: item, _p: PhantomData, _dim: PhantomData}
     }
 
-/// Consumes self, returning the shape and item
-    pub fn extract(self) -> (LS, T) {
-        (self.shape, self.item)
+/// Consumes self, returning the geometry and item
+    pub fn extract(self) -> (LG, T) {
+        (self.geometry, self.item)
     }
 
-    pub fn as_tuple(&self) -> (&LS, &T) {
-        (&self.shape, &self.item)
+    pub fn as_tuple(&self) -> (&LG, &T) {
+        (&self.geometry, &self.item)
     }
 
-    pub fn as_mut_tuple(&mut self) -> (&LS, &mut T) {
-        (&self.shape, &mut self.item)
+    pub fn as_mut_tuple(&mut self) -> (&LG, &mut T) {
+        (&self.geometry, &mut self.item)
     }
 }
 
-impl<P, DIM, LS, T> MbrLeafGeometry<P, DIM> for MbrLeaf<P, DIM, LS, T>
+impl<P, DIM, LG, T> MbrLeafGeometry<P, DIM> for MbrLeaf<P, DIM, LG, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LS: MbrLeafGeometry<P, DIM> {
+          LG: MbrLeafGeometry<P, DIM> {
 
     fn dim(&self) -> usize {
-        self.shape.dim()
+        self.geometry.dim()
     }
 
     fn expand_mbr_to_fit(&self, edges: &mut Rect<P, DIM>) {
-        self.shape.expand_mbr_to_fit(edges)
+        self.geometry.expand_mbr_to_fit(edges)
     }
 
     fn distance_from_mbr_center(&self, edges: &Rect<P, DIM>) -> P {
-        self.shape.distance_from_mbr_center(edges)
+        self.geometry.distance_from_mbr_center(edges)
     }
 
     fn contained_by_mbr(&self, edges: &Rect<P, DIM>) -> bool {
-        self.shape.contained_by_mbr(edges)
+        self.geometry.contained_by_mbr(edges)
     }
 
     fn overlapped_by_mbr(&self, edges: &Rect<P, DIM>) -> bool {
-        self.shape.overlapped_by_mbr(edges)
+        self.geometry.overlapped_by_mbr(edges)
     }
 
     fn area_overlapped_with_mbr(&self, edges: &Rect<P, DIM>) -> P {
-        self.shape.area_overlapped_with_mbr(edges)
+        self.geometry.area_overlapped_with_mbr(edges)
     }
 
     fn area(&self) -> P {
-        self.shape.area()
+        self.geometry.area()
     }
 
     fn min_for_axis(&self, dim: usize) -> P {
-        self.shape.min_for_axis(dim)
+        self.geometry.min_for_axis(dim)
     }
 
     fn max_for_axis(&self, dim: usize) -> P {
-        self.shape.max_for_axis(dim)
+        self.geometry.max_for_axis(dim)
     }
 }

@@ -18,10 +18,10 @@ use generic_array::ArrayLength;
 /// The parameter `mbr` represents a minimum bounding rectangle.
 /// An mbr whose corners are at (x1, y1), (x2, y2) will have the corresponding edges: (x1, x2), (y1, y2)
 pub trait MbrLeafGeometry<P, DIM: ArrayLength<P> + ArrayLength<(P, P)>> {
-    /// The shape's dimension count
+    /// The geometry's dimension count
     fn dim(&self) -> usize;
 
-    /// Determine the area of the shape
+    /// Determine the area of the geometry
     fn area(&self) -> P;
 
     /// the minimum extent for a given axis

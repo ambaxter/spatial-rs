@@ -15,34 +15,34 @@ use parking_lot::RwLock;
 
 /// Level node of a tree. Either contains other levels or leaves
 #[derive(Debug)]
-pub enum MbrNode<P, DIM, LS, T>
+pub enum MbrNode<P, DIM, LG, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     /// Contains only other levels
     Level {
         mbr: Rect<P, DIM>,
-        children: Vec<MbrNode<P, DIM, LS, T>>,
+        children: Vec<MbrNode<P, DIM, LG, T>>,
     },
     /// Contains only leaves
     Leaves {
         mbr: Rect<P, DIM>,
-        children: Vec<RwLock<MbrLeaf<P, DIM, LS, T>>>,
+        children: Vec<RwLock<MbrLeaf<P, DIM, LG, T>>>,
     },
 }
 
-impl<P, DIM, LS, T> MbrNode<P, DIM, LS, T>
+impl<P, DIM, LG, T> MbrNode<P, DIM, LG, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LS: MbrLeafGeometry<P, DIM> {
+          LG: MbrLeafGeometry<P, DIM> {
 
 /// Create an empty leaf level
-    pub fn new_leaves() -> MbrNode<P, DIM, LS, T> {
+    pub fn new_leaves() -> MbrNode<P, DIM, LG, T> {
         MbrNode::Leaves{mbr: Rect::max_inverted(), children: Vec::new()}
     }
 
 /// Create an empty leaf level with no capacity for leaves.
 /// Only used for passing ownership of root into the index functions
-    pub fn new_no_alloc() -> MbrNode<P, DIM, LS, T> {
+    pub fn new_no_alloc() -> MbrNode<P, DIM, LG, T> {
         MbrNode::Leaves{mbr: Rect::max_inverted(), children: Vec::with_capacity(0)}
     }
 
@@ -93,10 +93,10 @@ impl<P, DIM, LS, T> MbrNode<P, DIM, LS, T>
 }
 
 
-impl<P, DIM, LS, T> MbrLeafGeometry<P, DIM> for MbrNode<P, DIM, LS, T>
+impl<P, DIM, LG, T> MbrLeafGeometry<P, DIM> for MbrNode<P, DIM, LG, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LS: MbrLeafGeometry<P, DIM> {
+          LG: MbrLeafGeometry<P, DIM> {
 
     fn dim(&self) -> usize {
         self.mbr().dim()
