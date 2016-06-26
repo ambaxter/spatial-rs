@@ -40,7 +40,7 @@ impl<P, DIM, LG, T> RRemove<P, DIM, LG, T>
             min: min,
             _dim: PhantomData,
             _p: PhantomData,
-            _ls: PhantomData,
+            _lg: PhantomData,
             _t: PhantomData
         }
     }

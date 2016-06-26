@@ -110,7 +110,7 @@ impl<P, DIM, LG, T> RStarInsert<P, DIM, LG, T>
             max_k: max_k,
             _dim: PhantomData,
             _p: PhantomData,
-            _ls: PhantomData,
+            _lg: PhantomData,
             _t: PhantomData
         }
     }
