@@ -3,7 +3,9 @@ extern crate generic_array;
 extern crate typenum;
 extern crate spatial;
 
-use spatial::{Point, Rect, RStar, MbrRectQuery};
+use spatial::geometry::{Point, Rect};
+use spatial::RStar;
+use spatial::tree::mbr::MbrRectQuery;
 
 #[test]
 fn rstar_integration() {

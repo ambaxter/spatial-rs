@@ -9,7 +9,9 @@ extern crate spatial;
 
 use rand::Rng;
 use test::Bencher;
-use spatial::{Point, Rect, MbrRectQuery, RStar, RStarTree};
+use spatial::geometry::{Point, Rect};
+use spatial::tree::mbr::MbrRectQuery;
+use spatial::{RStar, RStarTree};
 use typenum::U3;
 
 fn generate_tree_with_size(count: usize) -> RStarTree<f64, U3, Point<f64, U3>, usize>

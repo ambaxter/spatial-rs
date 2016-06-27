@@ -13,7 +13,7 @@ The march to 0.1.0:
 - [x] Minimum documentation
 - [x] Tests
 - [x] Benchmarks all the things
-- [x] Rename Shape -> LeafShape, LSHAPE -> LS
+- [x] Rename Shape -> LeafGeometry, LSHAPE -> LG
 - [x] Prepare InsertIndexes pooling leaves
 - [x] Better documentation(ish?)
 - [x] Polish code for crates.io debut
