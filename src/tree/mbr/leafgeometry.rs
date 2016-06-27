@@ -13,7 +13,8 @@ use std::ops::{Deref, DerefMut};
 use generic_array::ArrayLength;
 
 /// The minimum functionality required to insert leaf geometry into `MbrMap`
-/// Until the rust compiler allows compile-time generic integers, the generics here will be kinda painful
+/// Until the rust compiler allows compile-time generic integers, we'll be using generic_array's `ArrayLength` to specify
+/// geometry dimensions at compile time.
 ///
 /// The parameter `mbr` represents a minimum bounding rectangle.
 /// An mbr whose corners are at (x1, y1), (x2, y2) will have the corresponding edges: (x1, x2), (y1, y2)
