@@ -5,6 +5,8 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
+//! Collection of minimum bounding rectangle spatial trees
+
 mod index;
 mod leaf;
 mod leafgeometry;

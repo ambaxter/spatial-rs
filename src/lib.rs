@@ -5,6 +5,8 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
+//! Spatial Trees
+
 #[macro_use]
 extern crate itertools;
 #[macro_use]

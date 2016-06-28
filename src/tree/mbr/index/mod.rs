@@ -5,6 +5,8 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
+//! Specific implementations for inserting and removing leaves
+
 use generic_array::ArrayLength;
 use tree::mbr::{MbrNode, MbrLeaf, MbrQuery};
 pub mod rstar;
