@@ -5,7 +5,7 @@ Currently only implements R* Tree, but I'm trying to keep it generic enough wher
 
 # Roadmap
 
-~The march to 0.1.0:~
+~~The march to 0.1.0:~~
 - [x] Refactor the trees (for the 4th time) to support retain and ```Leaf<P, D, S, T> where S: Shape<P, D>``` so that users can define their own leaf shapes
 - [x] For remove and retain, do users even need their leaves back?
 - [x] Make Rect::margin a trait
