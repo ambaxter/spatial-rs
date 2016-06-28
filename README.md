@@ -3,6 +3,8 @@ N-Dimensional Spatial Tree implementations library for Rust
 
 Currently only implements R* Tree, but I'm trying to keep it generic enough where most spatial trees can be supported in a single interface.
 
+[Documentation](https://ambaxter.github.io/spatial/doc/spatial/index.html)
+
 # Roadmap
 
 ~~The march to 0.1.0:~~
