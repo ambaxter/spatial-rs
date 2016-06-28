@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["ambaxter"]
 repository = "https://github.com/ambaxter/spatial-rs.git"
 homepage = "https://github.com/ambaxter/spatial-rs"
+documentation = "https://ambaxter.github.io/spatial/doc/spatial/index.html"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 
