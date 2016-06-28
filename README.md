@@ -3,9 +3,9 @@ N-Dimensional Spatial Tree implementations library for Rust
 
 Currently only implements R* Tree, but I'm trying to keep it generic enough where most spatial trees can be supported in a single interface.
 
-# Expected development tasks
+# Roadmap
 
-The march to 0.1.0: 
+~The march to 0.1.0:~
 - [x] Refactor the trees (for the 4th time) to support retain and ```Leaf<P, D, S, T> where S: Shape<P, D>``` so that users can define their own leaf shapes
 - [x] For remove and retain, do users even need their leaves back?
 - [x] Make Rect::margin a trait
@@ -17,7 +17,7 @@ The march to 0.1.0:
 - [x] Prepare InsertIndexes pooling leaves
 - [x] Better documentation(ish?)
 - [x] Polish code for crates.io debut
-- [ ] Publish to crates.io
+- [x] Publish to crates.io
 
 0.2.0:
 - [ ] Inevitable bug fixes
