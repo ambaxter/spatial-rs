@@ -8,7 +8,7 @@ homepage = "https://github.com/ambaxter/spatial-rs"
 documentation = "https://ambaxter.github.io/spatial/doc/spatial/index.html"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-keywords = ["spatial","geometry","tree","r","r*","r+"]
+keywords = ["spatial","geometry","tree","r-tree","rstar"]
 
 
 [dependencies]
