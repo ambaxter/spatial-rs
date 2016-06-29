@@ -17,6 +17,121 @@ use std::marker::PhantomData;
 use parking_lot::RwLock;
 use vecext::{PackRwLocks, UnpackRwLocks};
 use std::mem;
+use ordered_float::NotNaN;
+
+#[derive(Debug)]
+#[must_use]
+enum InsertResult<P, DIM, LG, T>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
+{
+    Ok,
+    Split(MbrNode<P, DIM, LG, T>),
+}
+
+pub struct RQuadraticInsert<P, DIM, LG, T>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
+{
+    preferred_min: usize,
+    max: usize,
+    _p: PhantomData<P>,
+    _dim: PhantomData<DIM>,
+    _lg: PhantomData<LG>,
+    _t: PhantomData<T>,
+}
+
+impl<P, DIM, LG, T> RQuadraticInsert<P, DIM, LG, T>
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
+        DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
+        LG: MbrLeafGeometry<P, DIM>,
+{
+    fn area_cost(&self, mbr: &Rect<P, DIM>, leaf: &MbrLeaf<P, DIM, LG, T>) -> (NotNaN<P>, NotNaN<P>) {
+        let mut expanded = mbr.clone();
+        leaf.expand_mbr_to_fit(&mut expanded);
+        let mbr_area = mbr.area();
+        let expanded_area = expanded.area();
+        let area_cost = expanded_area - mbr_area;
+        (NotNaN::from(area_cost), NotNaN::from(expanded_area))
+    }
+
+    fn choose_subnode<'tree>(&self, level: &'tree mut Vec<MbrNode<P, DIM, LG, T>>, leaf: &MbrLeaf<P, DIM, LG, T>) -> &'tree mut MbrNode<P, DIM, LG, T> {
+        assert!(!level.is_empty(), "Level should not be empty!");
+        level.iter_mut().min_by_key(|a| self.area_cost(a.mbr(), leaf)).unwrap()
+    }
+
+    fn split<V: MbrLeafGeometry<P, DIM>>(&self, mbr: &mut Rect<P, DIM>, children: &mut Vec<V>) -> (Rect<P, DIM>, Vec<V>) {
+    }
+
+    //OT1
+    fn handle_overflow(&self, level: &mut MbrNode<P, DIM, LG, T>) -> InsertResult<P, DIM, LG, T> {
+        match *level {
+                MbrNode::Leaves{ref mut mbr, ref mut children} => {
+                    // unpack all children from the RwLock
+                    let mut leaf_children = mem::replace(children, Vec::with_capacity(0))
+                        .unpack_rwlocks();
+
+                    // Split
+                    let (split_mbr, split_children) = self.split(mbr, &mut leaf_children);
+
+                    // repack non-split children
+                    *children = leaf_children.pack_rwlocks();
+
+                    InsertResult::Split(MbrNode::Leaves{mbr: split_mbr, children: split_children.pack_rwlocks()})
+                },
+                MbrNode::Level{ref mut mbr, ref mut children} => {
+                    let (split_mbr, split_children) = self.split(mbr, children);
+                    InsertResult::Split(MbrNode::Level{mbr: split_mbr, children: split_children})
+                },
+        }
+    }
+
+    fn insert_into_level(&self, level: &mut MbrNode<P, DIM, LG, T>, leaf: MbrLeaf<P, DIM, LG, T>) -> InsertResult<P, DIM, LG, T> {
+        //I4
+        leaf.geometry.expand_mbr_to_fit(level.mbr_mut());
+        match *level {
+            //I2
+            MbrNode::Leaves{ref mut children, ..} => {
+                children.push(RwLock::new(leaf));
+            },
+            //I1
+            MbrNode::Level{ref mut mbr, ref mut children} => {
+                //CS3
+                let insert_result = self.insert_into_level(self.choose_subnode(children, &leaf), leaf);
+                //I3
+                if let InsertResult::Split(child) = insert_result {
+                    children.push(child);
+                } 
+            }
+        }
+        //I2 & I3
+        if level.len() > self.max {
+            return self.handle_overflow(level);
+        }
+        InsertResult::Ok
+    }
+}
+
+impl<P, DIM, LG, T> IndexInsert<P, DIM, LG, T> for RQuadraticInsert<P, DIM, LG, T>
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
+        DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
+        LG: MbrLeafGeometry<P, DIM>,
+{
+    fn insert_into_root(&self, mut root: MbrNode<P, DIM, LG, T>, leaf: MbrLeaf<P, DIM, LG, T>) -> MbrNode<P, DIM, LG, T> {
+        //let mut level_stack = Vec::new();
+        root
+    }
+
+    fn preferred_min(&self) -> usize {
+        self.preferred_min
+    }
+
+    fn new_leaves(&self) -> MbrNode<P, DIM, LG, T> {
+        MbrNode::new_leaves()
+    }
+
+    fn new_no_alloc_leaves(&self) -> MbrNode<P, DIM, LG, T> {
+        MbrNode::new_no_alloc()
+    }
+}
 
 pub struct RRemove<P, DIM, LG, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>

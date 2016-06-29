@@ -69,8 +69,8 @@ pub struct RStarInsert<P, DIM, LG, T>
     choose_subtree_p: usize,
     min_k: usize,
     max_k: usize,
-    _dim: PhantomData<DIM>,
     _p: PhantomData<P>,
+    _dim: PhantomData<DIM>,
     _lg: PhantomData<LG>,
     _t: PhantomData<T>,
 }
@@ -108,8 +108,8 @@ impl<P, DIM, LG, T> RStarInsert<P, DIM, LG, T>
             choose_subtree_p: choose_subtree_p,
             min_k: min_k,
             max_k: max_k,
-            _dim: PhantomData,
             _p: PhantomData,
+            _dim: PhantomData,
             _lg: PhantomData,
             _t: PhantomData
         }
