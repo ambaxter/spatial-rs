@@ -5,8 +5,8 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
-use std::ops::{MulAssign, AddAssign};
+use num::{Zero, One, Signed, Float, Bounded, ToPrimitive, FromPrimitive};
+use std::ops::{MulAssign, AddAssign, Deref};
 use vecext::{RetainMut, RetainAndAppend};
 use geometry::Rect;
 use std::fmt::Debug;
@@ -18,6 +18,9 @@ use parking_lot::RwLock;
 use vecext::{PackRwLocks, UnpackRwLocks};
 use std::mem;
 use ordered_float::NotNaN;
+use itertools::Itertools;
+use std::cmp;
+use generic_array::GenericArray;
 
 #[derive(Debug)]
 #[must_use]
@@ -28,21 +31,109 @@ enum InsertResult<P, DIM, LG, T>
     Split(MbrNode<P, DIM, LG, T>),
 }
 
-pub struct RQuadraticInsert<P, DIM, LG, T>
+pub trait PickSeed<P, DIM, LG, T> 
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
-    preferred_min: usize,
-    max: usize,
+    fn pick_seed<V: MbrLeafGeometry<P, DIM>>(&self, mbr: &Rect<P, DIM>, children: &Vec<V>) -> (usize, usize);
+}
+
+pub struct QuadraticPickSeed<P, DIM, LG, T> {
     _p: PhantomData<P>,
     _dim: PhantomData<DIM>,
     _lg: PhantomData<LG>,
     _t: PhantomData<T>,
 }
 
-impl<P, DIM, LG, T> RQuadraticInsert<P, DIM, LG, T>
+impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for QuadraticPickSeed<P, DIM, LG, T> 
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
         LG: MbrLeafGeometry<P, DIM>,
+{
+    fn pick_seed<V: MbrLeafGeometry<P, DIM>>(&self, mbr: &Rect<P, DIM>, children: &Vec<V>) -> (usize, usize) {
+        let (_, k, l) = (0..children.len()).combinations()
+            //PS1
+            .map(|(k, l)| {
+                // We're safe here because we're already limiting ourselves to len
+                let (k_child, l_child) = unsafe {(children.get_unchecked(k), children.get_unchecked(l) )};
+                let mut mbr = Rect::max_inverted();
+                k_child.expand_mbr_to_fit(&mut mbr);
+                l_child.expand_mbr_to_fit(&mut mbr);
+                (mbr.area() - k_child.area() - l_child.area(), k, l)
+            })
+            //PS2
+            .max_by_key(|&(j, _, _)| NotNaN::from(j)).unwrap();
+        (k, l)
+    }
+}
+
+pub struct LinearPickSeed<P, DIM, LG, T> {
+    _p: PhantomData<P>,
+    _dim: PhantomData<DIM>,
+    _lg: PhantomData<LG>,
+    _t: PhantomData<T>,
+}
+
+impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for LinearPickSeed<P, DIM, LG, T> 
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
+        DIM: ArrayLength<P> + ArrayLength<(P, P)> + ArrayLength<(P, usize)> + Clone,
+        LG: MbrLeafGeometry<P, DIM>,
+{
+    fn pick_seed<V: MbrLeafGeometry<P, DIM>>(&self, mbr: &Rect<P, DIM>, children: &Vec<V>) -> (usize, usize) {
+        let mut widths: GenericArray<P, DIM> = GenericArray::new();
+        izip!(widths.iter_mut(), mbr.deref()).foreach(|(width, &(min, max))| {
+            *width = max - min;
+            if *width <= Zero::zero() {
+                *width - One::one();
+            }
+        });
+        let mut greatest_lower: GenericArray<(P, usize), DIM> = GenericArray::new();
+        greatest_lower.iter_mut().foreach(|item| *item = (Bounded::max_value(), 0));
+        let mut least_upper: GenericArray<(P, usize), DIM> = GenericArray::new();
+        least_upper.iter_mut().foreach(|item| *item = (Bounded::min_value(), 0));
+        children.iter().enumerate().foreach(|(i, child)| {
+            izip!(least_upper.iter_mut(), greatest_lower.iter_mut()).enumerate()
+                .foreach(|(dim, (&mut(ref mut lmax, ref mut li), &mut(ref mut gmin, ref mut gi)))| {
+                    let min_for_axis = child.min_for_axis(dim);
+                    let max_for_axis = child.max_for_axis(dim);
+                    if min_for_axis > *lmax {
+                        *lmax = min_for_axis;
+                        *li = i;
+                    }
+                    if max_for_axis < *gmin {
+                        *gmin = min_for_axis;
+                        *gi = i;
+                    }
+                });
+        });
+        
+        let (_, mut k, mut l) = izip!(widths.iter(), least_upper.iter(), greatest_lower.iter())
+            .map(|(width, &(lmax, li), &(gmin, gi))| (((gmin - lmax) / *width), li, gi))
+            .max_by_key(|&(separation, _, _)| NotNaN::from(separation)).unwrap();
+
+        if k > l {
+            mem::swap(&mut k, & mut l);
+        }
+        (k, l)
+    }
+}
+
+pub struct RInsert<P, DIM, LG, T, PS>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
+{
+    preferred_min: usize,
+    max: usize,
+    pick_seed: PS,
+    _p: PhantomData<P>,
+    _dim: PhantomData<DIM>,
+    _lg: PhantomData<LG>,
+    _t: PhantomData<T>,
+}
+
+impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
+        DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
+        LG: MbrLeafGeometry<P, DIM>,
+        PS: PickSeed<P, DIM, LG, T>,
 {
     fn area_cost(&self, mbr: &Rect<P, DIM>, leaf: &MbrLeaf<P, DIM, LG, T>) -> (NotNaN<P>, NotNaN<P>) {
         let mut expanded = mbr.clone();
@@ -59,6 +150,73 @@ impl<P, DIM, LG, T> RQuadraticInsert<P, DIM, LG, T>
     }
 
     fn split<V: MbrLeafGeometry<P, DIM>>(&self, mbr: &mut Rect<P, DIM>, children: &mut Vec<V>) -> (Rect<P, DIM>, Vec<V>) {
+        // QS1
+        let (mut k, mut l) = self.pick_seed.pick_seed(mbr, children);
+
+        // in the unlikely scenario of a tie, just pick something
+        if k == l {
+            if k < children.len() - 1 {
+                l += 1;
+            } else if k > 0{
+                k -= 1;
+            } else {
+                unreachable!("PickSeed logic failue: li {:?}, gi {:?}, children.len() {:?}", k, l, children.len());
+            }
+        }
+
+        let mut k_mbr = Rect::max_inverted();
+        let k_child = children.remove(k);
+        k_child.expand_mbr_to_fit(&mut k_mbr);
+        let mut k_children = Vec::new();
+        k_children.push(k_child);
+
+        let mut l_mbr = Rect::max_inverted();
+        // -1 because we removed k
+        let l_child = children.remove(l - 1);
+        l_child.expand_mbr_to_fit(&mut l_mbr);
+        let mut l_children = Vec::new();
+        l_children.push(l_child);
+
+        
+        loop {
+            // QS2
+            if children.is_empty() {
+                break;
+            }
+            if k_children.len() + children.len() == self.preferred_min {
+                for child in children.iter() {
+                    child.expand_mbr_to_fit(&mut k_mbr);
+                }
+                k_children.append(children);
+                break;
+            }
+            if l_children.len() + children.len() == self.preferred_min {
+                for child in children.iter() {
+                    child.expand_mbr_to_fit(&mut l_mbr);
+                }
+                l_children.append(children);
+                break;
+            }
+            //QS3
+            if let Some(child) = children.pop() {
+                let mut k_expanded = k_mbr.clone();
+                child.expand_mbr_to_fit(&mut k_expanded);
+                let mut l_expanded = l_mbr.clone();
+                child.expand_mbr_to_fit(&mut l_expanded);
+                let k_area = k_mbr.area();
+                let l_area = l_mbr.area(); 
+                if (k_expanded.area() - k_area, k_area, k_children.len()) < (l_expanded.area() - l_area, l_area, l_children.len()) {
+                    k_mbr = k_expanded;
+                    k_children.push(child);
+                } else {
+                    l_mbr = l_expanded;
+                    l_children.push(child);
+                }
+            }
+        }
+        *mbr = k_mbr;
+        children.append(&mut k_children);
+        (l_mbr, l_children)
     }
 
     //OT1
@@ -110,7 +268,7 @@ impl<P, DIM, LG, T> RQuadraticInsert<P, DIM, LG, T>
     }
 }
 
-impl<P, DIM, LG, T> IndexInsert<P, DIM, LG, T> for RQuadraticInsert<P, DIM, LG, T>
+impl<P, DIM, LG, T, PS> IndexInsert<P, DIM, LG, T> for RInsert<P, DIM, LG, T, PS>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
         LG: MbrLeafGeometry<P, DIM>,
