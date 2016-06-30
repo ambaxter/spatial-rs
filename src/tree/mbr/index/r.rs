@@ -168,7 +168,7 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
             }
         }
         
-        assert!(k > l, "k {:?} must be greater than l {:?}", k, l);
+        assert!(k < l, "k {:?} must be less than l {:?}", k, l);
         
         let mut k_mbr = Rect::max_inverted();
         let k_child = children.remove(k);
