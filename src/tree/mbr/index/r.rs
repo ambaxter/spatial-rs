@@ -90,6 +90,8 @@ impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for LinearPickSeed<P, DIM, LG, T>
         greatest_lower.iter_mut().foreach(|item| *item = (Bounded::max_value(), 0));
         let mut least_upper: GenericArray<(P, usize), DIM> = GenericArray::new();
         least_upper.iter_mut().foreach(|item| *item = (Bounded::min_value(), 0));
+
+        // LPS1
         children.iter().enumerate().foreach(|(i, child)| {
             izip!(least_upper.iter_mut(), greatest_lower.iter_mut()).enumerate()
                 .foreach(|(dim, (&mut(ref mut lmax, ref mut li), &mut(ref mut gmin, ref mut gi)))| {
@@ -107,7 +109,9 @@ impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for LinearPickSeed<P, DIM, LG, T>
         });
         
         let (_, mut k, mut l) = izip!(widths.iter(), least_upper.iter(), greatest_lower.iter())
+            //LPS2
             .map(|(width, &(lmax, li), &(gmin, gi))| (((gmin - lmax) / *width), li, gi))
+            //LPS3
             .max_by_key(|&(separation, _, _)| NotNaN::from(separation)).unwrap();
 
         if k > l {
@@ -163,7 +167,9 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
                 unreachable!("PickSeed logic failue: li {:?}, gi {:?}, children.len() {:?}", k, l, children.len());
             }
         }
-
+        
+        assert!(k > l, "k {:?} must be greater than l {:?}", k, l);
+        
         let mut k_mbr = Rect::max_inverted();
         let k_child = children.remove(k);
         k_child.expand_mbr_to_fit(&mut k_mbr);
