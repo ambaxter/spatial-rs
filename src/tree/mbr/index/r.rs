@@ -83,7 +83,7 @@ impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for LinearPickSeed<P, DIM, LG, T>
         izip!(widths.iter_mut(), mbr.deref()).foreach(|(width, &(min, max))| {
             *width = max - min;
             if *width <= Zero::zero() {
-                *width - One::one();
+                *width = One::one();
             }
         });
         let mut greatest_lower: GenericArray<(P, usize), DIM> = GenericArray::new();
