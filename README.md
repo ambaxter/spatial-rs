@@ -7,39 +7,30 @@ Currently only implements R* Tree, but I'm trying to keep it generic enough wher
 
 # Roadmap
 
-~~The march to 0.1.0:~~
-- [x] Refactor the trees (for the 4th time) to support retain and ```Leaf<P, D, S, T> where S: Shape<P, D>``` so that users can define their own leaf shapes
-- [x] For remove and retain, do users even need their leaves back?
-- [x] Make Rect::margin a trait
-- [x] Split SpatialMapQuery trait and RectQuery
-- [x] Minimum documentation
-- [x] Tests
-- [x] Benchmarks all the things
-- [x] Rename Shape -> LeafGeometry, LSHAPE -> LG
-- [x] Prepare InsertIndexes pooling leaves
-- [x] Better documentation(ish?)
-- [x] Polish code for crates.io debut
-- [x] Publish to crates.io
-
-0.2.0:
+The march to 0.2.0:
 - [ ] Inevitable bug fixes
 - [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
 - [x] Bug-fix: iter_mut and query_mut should take &mut self to provide Isolation guarantees
-- [ ] Performance improvement: Remove recursion
-- [ ] R-Tree: implement, document, test, and benchmark
+- [ ] R-Tree: ~~implement~~, document, test, and benchmark
 - [ ] X-Tree: implement, document, test, and benchmark
 - [x] Performance improvement: Remove UnpackRwLocks and PackRwLocks requirement
+- [ ] Examples in documentation, README.md
+- [ ] Final polish before publish
+- [ ] Publish to crates.io
 
 0.3.0:
 - [ ] Inevitable bug fixes
 - [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
 - [ ] Move the tree iterator code into macros?
 - [ ] Macro so users can create their own Shapes enum?
+- [ ] Example application - SLD2 application - insert point at mouse click to visualize the tree
+- [ ] Benchmark individual Index functions
 - [ ] ???
 
 0.4.0:
 - [ ] Inevitable bug fixes
 - [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
+- [ ] Performance improvement: remove recursion - add another unsafe area :/
 - [ ] Performance improvement: Use lifeguard with MbrNode
 - [ ] ???
 
@@ -51,7 +42,7 @@ Currently only implements R* Tree, but I'm trying to keep it generic enough wher
 - [ ] ???
 
 In the future:
-- [ ] Saving and updating tree to disk (either with or after 0.5)
+- [ ] Saving and updating tree to disk (either with or after 0.5) - Is that even a rabbit hole I should dive down?
 - [ ] Compiler supported integer generics (whenever it lands in stable)
 - [ ] Profit? (not likely)
 
