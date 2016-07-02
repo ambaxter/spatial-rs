@@ -11,7 +11,6 @@ use tree::mbr::{MbrLeaf, MbrLeafGeometry};
 use geometry::Rect;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
-use parking_lot::RwLock;
 
 /// Level node of a tree. Either contains other levels or leaves
 #[derive(Debug)]
@@ -26,7 +25,7 @@ pub enum MbrNode<P, DIM, LG, T>
     /// Contains only leaves
     Leaves {
         mbr: Rect<P, DIM>,
-        children: Vec<RwLock<MbrLeaf<P, DIM, LG, T>>>,
+        children: Vec<MbrLeaf<P, DIM, LG, T>>,
     },
 }
 

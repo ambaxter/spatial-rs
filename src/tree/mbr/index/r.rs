@@ -14,12 +14,9 @@ use generic_array::ArrayLength;
 use tree::mbr::{MbrNode, MbrQuery, MbrLeaf, MbrLeafGeometry};
 use tree::mbr::index::{IndexInsert, IndexRemove, RemoveReturn, AT_ROOT, NOT_AT_ROOT};
 use std::marker::PhantomData;
-use parking_lot::RwLock;
-use vecext::{PackRwLocks, UnpackRwLocks};
 use std::mem;
 use ordered_float::NotNaN;
 use itertools::Itertools;
-use std::cmp;
 use generic_array::GenericArray;
 
 #[derive(Debug)]
@@ -154,6 +151,7 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
     }
 
     fn split<V: MbrLeafGeometry<P, DIM>>(&self, mbr: &mut Rect<P, DIM>, children: &mut Vec<V>) -> (Rect<P, DIM>, Vec<V>) {
+        assert!(!children.is_empty(), "Empty children should not be split.");
         // QS1
         let (mut k, mut l) = self.pick_seed.pick_seed(mbr, children);
 
@@ -161,10 +159,8 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
         if k == l {
             if k < children.len() - 1 {
                 l += 1;
-            } else if k > 0{
-                k -= 1;
             } else {
-                unreachable!("PickSeed logic failue: li {:?}, gi {:?}, children.len() {:?}", k, l, children.len());
+                k -= 1;
             }
         }
         
@@ -229,17 +225,9 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
     fn handle_overflow(&self, level: &mut MbrNode<P, DIM, LG, T>) -> InsertResult<P, DIM, LG, T> {
         match *level {
                 MbrNode::Leaves{ref mut mbr, ref mut children} => {
-                    // unpack all children from the RwLock
-                    let mut leaf_children = mem::replace(children, Vec::with_capacity(0))
-                        .unpack_rwlocks();
-
                     // Split
-                    let (split_mbr, split_children) = self.split(mbr, &mut leaf_children);
-
-                    // repack non-split children
-                    *children = leaf_children.pack_rwlocks();
-
-                    InsertResult::Split(MbrNode::Leaves{mbr: split_mbr, children: split_children.pack_rwlocks()})
+                    let (split_mbr, split_children) = self.split(mbr, children);
+                    InsertResult::Split(MbrNode::Leaves{mbr: split_mbr, children: split_children})
                 },
                 MbrNode::Level{ref mut mbr, ref mut children} => {
                     let (split_mbr, split_children) = self.split(mbr, children);
@@ -254,7 +242,7 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
         match *level {
             //I2
             MbrNode::Leaves{ref mut children, ..} => {
-                children.push(RwLock::new(leaf));
+                children.push(leaf);
             },
             //I1
             MbrNode::Level{ref mut mbr, ref mut children} => {
@@ -325,32 +313,27 @@ impl<P, DIM, LG, T> RRemove<P, DIM, LG, T>
     }
 
 /// Removes matching leaves from a leaf level. Return true if the level should be retianed
-    fn remove_matching_leaves<Q: MbrQuery<P, DIM, LG, T>, F: FnMut(&T) -> bool>(&self, query: &Q, mbr: &mut Rect<P, DIM>, children: &mut Vec<RwLock<MbrLeaf<P, DIM, LG, T>>>,
+    fn remove_matching_leaves<Q: MbrQuery<P, DIM, LG, T>, F: FnMut(&T) -> bool>(&self, query: &Q, mbr: &mut Rect<P, DIM>, children: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
         removed: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
         to_reinsert: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
         f: &mut F,
         at_root: bool) -> bool {
 
 // unpack all children from the RwLock
-        let mut leaf_children = mem::replace(children, Vec::with_capacity(0))
-            .unpack_rwlocks();
-
         let orig_len = children.len();
-        leaf_children.retain_and_append(removed, |leaf| !query.accept_leaf(leaf) || f(&leaf.item));
+        children.retain_and_append(removed, |leaf| !query.accept_leaf(leaf) || f(&leaf.item));
         let children_removed = orig_len != children.len();
-        if leaf_children.len() < self.min && !at_root {
-            to_reinsert.append(&mut leaf_children);
+        if children.len() < self.min && !at_root {
+            to_reinsert.append(children);
             return false;
         }
 
         if children_removed {
             *mbr = Rect::max_inverted();
-            for child in &leaf_children {
+            for child in children {
                child.expand_mbr_to_fit(mbr);
             }
         }
-// repack non-removed children
-        *children = leaf_children.pack_rwlocks();
         true
     }
 
@@ -358,7 +341,7 @@ impl<P, DIM, LG, T> RRemove<P, DIM, LG, T>
     fn consume_leaves_for_reinsert(&self, nodes: &mut Vec<MbrNode<P, DIM, LG, T>>, to_reinsert: &mut Vec<MbrLeaf<P, DIM, LG, T>>) {
         for node in nodes {
             match *node {
-                MbrNode::Leaves{ref mut children, ..} => to_reinsert.append(&mut mem::replace(children, Vec::with_capacity(0)).unpack_rwlocks()),
+                MbrNode::Leaves{ref mut children, ..} => to_reinsert.append(&mut mem::replace(children, Vec::with_capacity(0))),
                 MbrNode::Level{ref mut children, ..} => self.consume_leaves_for_reinsert(children, to_reinsert)
             }
         }

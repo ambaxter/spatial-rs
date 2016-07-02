@@ -17,6 +17,7 @@ fn rstar_integration() {
     }
     assert_eq!(32, tree_map.len());
     assert_eq!(tree_map.len(), tree_map.iter().count());
+    assert_eq!(tree_map.len(), tree_map.iter_mut().count());
 
     println!("Remove query");
     let removed = tree_map.remove(MbrRectQuery::ContainedBy(Rect::from_corners(arr![f32; 0.0f32, 0.0f32, 0.0f32], arr![f32; 9.0f32, 9.0f32, 9.0f32])));

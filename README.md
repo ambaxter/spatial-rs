@@ -24,27 +24,29 @@ Currently only implements R* Tree, but I'm trying to keep it generic enough wher
 0.2.0:
 - [ ] Inevitable bug fixes
 - [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
-- [ ] Macro so users can create their own Shapes enum
-- [ ] Move the tree iterator code into macros?
-- [ ] R-Tree, R+Tree: implement, document, test, and benchmark
+- [x] Bug-fix: iter_mut and query_mut should take &mut self to provide Isolation guarantees
 - [ ] Performance improvement: Remove recursion
-- [ ] Performance improvement: Remove UnpackRwLocks and PackRwLocks requirement
-- [ ] Performance improvement: Use lifeguard with MbrNode
+- [ ] R-Tree: implement, document, test, and benchmark
+- [ ] X-Tree: implement, document, test, and benchmark
+- [x] Performance improvement: Remove UnpackRwLocks and PackRwLocks requirement
 
 0.3.0:
 - [ ] Inevitable bug fixes
 - [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
-- [ ] X-Tree: implement, document, test, and benchmark
+- [ ] Move the tree iterator code into macros?
+- [ ] Macro so users can create their own Shapes enum?
 - [ ] ???
 
 0.4.0:
 - [ ] Inevitable bug fixes
 - [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
+- [ ] Performance improvement: Use lifeguard with MbrNode
 - [ ] ???
 
 0.5.0:
 - [ ] Inevitable bug fixes
 - [ ] Interface changes and code reorganization expected
+- [ ] R+Tree: implement, document, test, and benchmark (moved because implementation requires T: + Clone for mbrmap)
 - [ ] Fast tree creation from sorted data
 - [ ] ???
 

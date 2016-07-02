@@ -9,7 +9,7 @@
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign};
 use geometry::Rect;
-use std::slice::Iter as SliceIter;
+use std::slice::{Iter as SliceIter, IterMut as SliceIterMut};
 use std::fmt::Debug;
 use generic_array::ArrayLength;
 use std::rc::Rc;
@@ -17,7 +17,6 @@ use tree::mbr::index::{IndexInsert, IndexRemove};
 use tree::mbr::{MbrLeafGeometry, MbrLeaf, MbrRectQuery, MbrQuery, MbrNode};
 use std::ops::Deref;
 use std::mem;
-use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 /// The generic container interface for spatial maps. Will, at the very least, be able to support R, R+, R*, and X trees
 pub struct MbrMap<P, DIM, LG, I, R, T>
@@ -91,8 +90,8 @@ impl<P, DIM, LG, I, R, T> MbrMap<P, DIM, LG, I, R, T>
     }
 
 /// IterMut for the map
-    pub fn iter_mut(&self) -> IterMut<P, DIM, LG, T, MbrRectQuery<P, DIM>> {
-        IterMut::new(MbrRectQuery::Overlaps(Rect::max()), &self.root)
+    pub fn iter_mut(&mut self) -> IterMut<P, DIM, LG, T, MbrRectQuery<P, DIM>> {
+        IterMut::new(MbrRectQuery::Overlaps(Rect::max()), &mut self.root)
     }
 
 /// Iter for the map with a given query
@@ -101,13 +100,13 @@ impl<P, DIM, LG, I, R, T> MbrMap<P, DIM, LG, I, R, T>
     }
 
 /// IterMut for the map with a given query
-    pub fn iter_query_mut<Q: MbrQuery<P, DIM, LG, T>>(&self, query: Q) -> IterMut<P, DIM, LG, T, Q> {
-        IterMut::new(query, &self.root)
+    pub fn iter_query_mut<Q: MbrQuery<P, DIM, LG, T>>(&mut self, query: Q) -> IterMut<P, DIM, LG, T, Q> {
+        IterMut::new(query, &mut self.root)
     }
 
 }
 
-type LeafIter<'tree, P, DIM, LG, T> = SliceIter<'tree, RwLock<MbrLeaf<P, DIM, LG, T>>>;
+type LeafIter<'tree, P, DIM, LG, T> = SliceIter<'tree, MbrLeaf<P, DIM, LG, T>>;
 
 /// Iterate through all `MbrNode::Leaves` matching a query
 struct LevelIter<'tree, P, DIM, LG, T, Q>
@@ -204,6 +203,109 @@ impl<'tree, P, DIM, LG, T, Q> Iterator for LevelIter<'tree, P, DIM, LG, T, Q>
     }
 }
 
+type LeafIterMut<'tree, P, DIM, LG, T> = SliceIterMut<'tree, MbrLeaf<P, DIM, LG, T>>;
+
+/// Iterate mutably through all `MbrNode::Leaves` matching a query
+struct LevelIterMut<'tree, P, DIM, LG, T, Q>
+    where P: 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P, P)> + 'tree,
+          LG: 'tree,
+          T: 'tree,
+          Q: MbrQuery<P, DIM, LG, T>
+{
+    query: Rc<Q>,
+    root: &'tree mut MbrNode<P, DIM, LG, T>,
+    level_stack: Vec<SliceIterMut<'tree, MbrNode<P, DIM, LG, T>>>,
+    finished: bool,
+}
+
+impl<'tree, P, DIM, LG, T, Q> LevelIterMut<'tree, P, DIM, LG, T, Q>
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
+          LG: MbrLeafGeometry<P, DIM> + 'tree,
+          T: 'tree,
+          Q: MbrQuery<P, DIM, LG, T>
+{
+
+/// Constructor
+    fn new(query: Rc<Q>, root: &'tree mut MbrNode<P, DIM, LG, T>) -> LevelIterMut<'tree, P, DIM, LG, T, Q> {
+        if root.is_empty() || !query.accept_level(root) {
+            return LevelIterMut{query: query, root: root, level_stack: Vec::with_capacity(0), finished: true};
+        }
+        LevelIterMut{query: query, root: root, level_stack: Vec::new(), finished: false}
+    }
+
+    unsafe fn unpack_root_lifetime(&mut self) -> &'tree mut MbrNode<P, DIM, LG, T> {
+        let root: *mut MbrNode<P, DIM, LG, T> = self.root;
+        &mut *root 
+    }
+
+/// Select the next matching leaves level
+    fn next_leaves(&mut self, mut m_iter: SliceIterMut<'tree, MbrNode<P, DIM, LG, T>>) -> Option<LeafIterMut<'tree, P, DIM, LG, T>> {
+        let mut iter_node = m_iter.next();
+        while let Some(node) = iter_node {
+            if !self.query.accept_level(node) {
+                iter_node = m_iter.next();
+                continue;
+            }
+            self.level_stack.push(m_iter);
+            match *node {
+                MbrNode::Leaves{ref mut children, ..} => return Some(children.iter_mut()),
+                MbrNode::Level{ref mut children, ..} => {
+                    let next = self.next_leaves(children.iter_mut());
+                    if next.is_none() {
+                        m_iter = self.level_stack.pop().unwrap();
+                        iter_node = m_iter.next();
+                        continue;
+                    }
+                    return next;
+                }
+            }
+        }
+        None
+    }
+}
+
+impl<'tree, P, DIM, LG, T, Q> Iterator for LevelIterMut<'tree, P, DIM, LG, T, Q>
+    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
+          LG: MbrLeafGeometry<P, DIM> + 'tree,
+          T: 'tree,
+          Q: MbrQuery<P, DIM, LG, T> 
+{
+    type Item = LeafIterMut<'tree, P, DIM, LG, T>;
+
+    fn next(&mut self) -> Option<LeafIterMut<'tree, P, DIM, LG, T>> {
+        if self.finished {
+            return None;
+        }
+        if self.level_stack.is_empty() {
+            match unsafe {self.unpack_root_lifetime()} {
+                &mut MbrNode::Leaves{ref mut children, ..} => {
+                    self.finished = true;
+                    return Some(children.iter_mut());
+                },
+                &mut MbrNode::Level{ref mut children, ..} => {
+                    self.level_stack.push(children.iter_mut());
+                }
+            }
+        }
+        let mut m_iter = self.level_stack.pop().unwrap();
+        let mut next = self.next_leaves(m_iter);
+        while let None = next {
+            if !self.level_stack.is_empty() {
+                m_iter = self.level_stack.pop().unwrap();
+                next = self.next_leaves(m_iter);
+            } else {
+                self.finished = true;
+                break;
+            }
+        }
+        next
+    }
+}
+
+
 /// Iter all `Leaf` items matching a query
 pub struct Iter<'tree, P, DIM, LG, T, Q>
     where P: 'tree,
@@ -215,7 +317,6 @@ pub struct Iter<'tree, P, DIM, LG, T, Q>
     query: Rc<Q>,
     level_iter: LevelIter<'tree, P, DIM, LG, T, Q>,
     leaf_iter: Option<LeafIter<'tree, P, DIM, LG, T>>,
-    leaf_lock: Option<RwLockReadGuard<'tree, MbrLeaf<P, DIM, LG, T>>>,
     finished: bool,
 }
 
@@ -230,24 +331,17 @@ impl<'tree, P, DIM, LG, T, Q> Iter<'tree, P, DIM, LG, T, Q>
     fn new(query: Q, root: &'tree MbrNode<P, DIM, LG, T>) -> Iter<'tree, P, DIM, LG, T, Q> {
         let rc_query = Rc::new(query);
         let level_iter = LevelIter::new(rc_query.clone(), root);
-        Iter{query: rc_query, level_iter: level_iter, leaf_iter: None, leaf_lock: None,  finished: false}
-    }
-
-    unsafe fn leaf_as_tuple(&self) -> (&'tree LG, &'tree T) {
-        let leaf: *const Option<RwLockReadGuard<'tree, MbrLeaf<P, DIM, LG, T>>> = &self.leaf_lock;
-        (*leaf).as_ref().unwrap().as_tuple()
+        Iter{query: rc_query, level_iter: level_iter, leaf_iter: None, finished: false}
     }
 
     /// Select the next matching leaf
-    fn next_leaf(&mut self, mut iter: SliceIter<'tree, RwLock<MbrLeaf<P, DIM, LG, T>>>) -> Option<(&'tree LG, &'tree T)> {
+    fn next_leaf(&mut self, mut iter: SliceIter<'tree, MbrLeaf<P, DIM, LG, T>>) -> Option<(&'tree LG, &'tree T)> {
         while let Some(ref mut leaf) = iter.next() {
-                let leaf_lock = leaf.read();
-                if !self.query.accept_leaf(&leaf_lock) {
+                if !self.query.accept_leaf(leaf) {
                     continue;
                 }
                 self.leaf_iter = Some(iter);
-                self.leaf_lock = Some(leaf_lock);
-                return Some(unsafe {self.leaf_as_tuple()});
+                return Some(leaf.as_tuple());
         }
         None
     }
@@ -266,8 +360,6 @@ impl<'tree, P, DIM, LG, T, Q> Iterator for Iter<'tree, P, DIM, LG, T, Q>
         if self.finished {
             return None;
         }
-// Release the lock immediately
-        self.leaf_lock = None;
         if self.leaf_iter.is_none() {
             self.leaf_iter = self.level_iter.next();
         }
@@ -299,9 +391,8 @@ pub struct IterMut<'tree, P, DIM, LG, T, Q>
           Q: MbrQuery<P, DIM, LG, T>
 {
     query: Rc<Q>,
-    level_iter: LevelIter<'tree, P, DIM, LG, T, Q>,
-    leaf_iter: Option<LeafIter<'tree, P, DIM, LG, T>>,
-    leaf_lock: Option<RwLockWriteGuard<'tree, MbrLeaf<P, DIM, LG, T>>>,
+    level_iter: LevelIterMut<'tree, P, DIM, LG, T, Q>,
+    leaf_iter: Option<LeafIterMut<'tree, P, DIM, LG, T>>,
     finished: bool,
 }
 
@@ -313,27 +404,24 @@ impl<'tree, P, DIM, LG, T, Q> IterMut<'tree, P, DIM, LG, T, Q>
           Q: MbrQuery<P, DIM, LG, T>
 {
 /// Constructor
-    fn new(query: Q, root: &'tree MbrNode<P, DIM, LG, T>) -> IterMut<'tree, P, DIM, LG, T, Q> {
+    fn new(query: Q, root: &'tree mut MbrNode<P, DIM, LG, T>) -> IterMut<'tree, P, DIM, LG, T, Q> {
         let rc_query = Rc::new(query);
-        let level_iter = LevelIter::new(rc_query.clone(), root);
-        IterMut{query: rc_query, level_iter: level_iter, leaf_iter: None, leaf_lock: None, finished: false}
-    }
-
-    unsafe fn leaf_as_mut_tuple(&mut self) -> (&'tree LG, &'tree mut T) {
-        let leaf: *mut Option<RwLockWriteGuard<'tree, MbrLeaf<P, DIM, LG, T>>> = &mut self.leaf_lock;
-        (*leaf).as_mut().unwrap().as_mut_tuple()
+        let level_iter = LevelIterMut::new(rc_query.clone(), root);
+        IterMut{query: rc_query, level_iter: level_iter, leaf_iter: None, finished: false}
     }
 
     /// Select the next matching leaf
-    fn next_leaf(&mut self, mut iter: SliceIter<'tree, RwLock<MbrLeaf<P, DIM, LG, T>>>) -> Option<(&'tree LG, &'tree mut T)> {
+    fn next_leaf(&mut self, mut iter: SliceIterMut<'tree, MbrLeaf<P, DIM, LG, T>>) -> Option<(&'tree LG, &'tree mut T)> {
         while let Some(ref mut leaf) = iter.next() {
-            let leaf_lock = leaf.write();
-                if !self.query.deref().accept_leaf(&leaf_lock) {
-                    continue;
-                }
-                self.leaf_iter = Some(iter);
-                self.leaf_lock = Some(leaf_lock);
-                return Some(unsafe {self.leaf_as_mut_tuple()});
+            if !self.query.deref().accept_leaf(leaf) {
+                continue;
+            }
+            self.leaf_iter = Some(iter);
+            let mut unsafe_leaf = unsafe {
+                let unsafe_leaf: *mut MbrLeaf<P, DIM, LG, T> = *leaf;
+                &mut *unsafe_leaf
+            };
+            return Some(unsafe_leaf.as_mut_tuple());
         }
         None
     }
@@ -352,8 +440,6 @@ impl<'tree, P, DIM, LG, T, Q> Iterator for IterMut<'tree, P, DIM, LG, T, Q>
         if self.finished {
             return None;
         }
-        // Release the lock immediately
-        self.leaf_lock = None;
         if self.leaf_iter.is_none() {
             self.leaf_iter = self.level_iter.next();
         }
