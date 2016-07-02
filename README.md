@@ -15,6 +15,7 @@ The march to 0.2.0:
 - [ ] X-Tree: implement, document, test, and benchmark
 - [x] Performance improvement: Remove UnpackRwLocks and PackRwLocks requirement
 - [ ] Examples in documentation, README.md
+- [ ] Changelog
 - [ ] Final polish before publish
 - [ ] Publish to crates.io
 
@@ -24,7 +25,7 @@ The march to 0.2.0:
 - [ ] Move the tree iterator code into macros?
 - [ ] Macro so users can create their own Shapes enum?
 - [ ] Example application - SLD2 application - insert point at mouse click to visualize the tree
-- [ ] Benchmark individual Index functions
+- [ ] test and benchmark individual Index functions as opposed to simply the overall tree
 - [ ] ???
 
 0.4.0:
@@ -32,6 +33,7 @@ The march to 0.2.0:
 - [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
 - [ ] Performance improvement: remove recursion - add another unsafe area :/
 - [ ] Performance improvement: Use lifeguard with MbrNode
+- [ ] Auto-guess performance variables?
 - [ ] ???
 
 0.5.0:
