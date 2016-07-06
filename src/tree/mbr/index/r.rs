@@ -28,10 +28,13 @@ enum InsertResult<P, DIM, LG, T>
     Split(RTreeNode<P, DIM, LG, T>),
 }
 
-pub trait PickSeed<P, DIM, LG, T> 
+pub trait PickSeed<P, DIM, LG, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
-    fn pick_seed<V: MbrLeafGeometry<P, DIM>>(&self, mbr: &Rect<P, DIM>, children: &Vec<V>) -> (usize, usize);
+    fn pick_seed<V: MbrLeafGeometry<P, DIM>>(&self,
+                                             mbr: &Rect<P, DIM>,
+                                             children: &Vec<V>)
+                                             -> (usize, usize);
 }
 
 pub struct QuadraticPickSeed;
@@ -43,16 +46,16 @@ impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for QuadraticPickSeed
 {
     fn pick_seed<V: MbrLeafGeometry<P, DIM>>(&self, mbr: &Rect<P, DIM>, children: &Vec<V>) -> (usize, usize) {
         let (_, k, l) = (0..children.len()).combinations()
-            //PS1
+// PS1
             .map(|(k, l)| {
-                // We're safe here because we're already limiting ourselves to len
+// We're safe here because we're already limiting ourselves to len
                 let (k_child, l_child) = unsafe {(children.get_unchecked(k), children.get_unchecked(l) )};
                 let mut mbr = Rect::max_inverted();
                 k_child.expand_mbr_to_fit(&mut mbr);
                 l_child.expand_mbr_to_fit(&mut mbr);
                 (mbr.area() - k_child.area() - l_child.area(), k, l)
             })
-            //PS2
+// PS2
             .max_by_key(|&(j, _, _)| NotNaN::from(j)).unwrap();
         (k, l)
     }
@@ -78,7 +81,7 @@ impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for LinearPickSeed
         let mut least_upper: GenericArray<(P, usize), DIM> = GenericArray::new();
         least_upper.iter_mut().foreach(|item| *item = (Bounded::min_value(), 0));
 
-        // LPS1
+// LPS1
         children.iter().enumerate().foreach(|(i, child)| {
             izip!(least_upper.iter_mut(), greatest_lower.iter_mut()).enumerate()
                 .foreach(|(dim, (&mut(ref mut lmax, ref mut li), &mut(ref mut gmin, ref mut gi)))| {
@@ -94,11 +97,11 @@ impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for LinearPickSeed
                     }
                 });
         });
-        
+
         let (_, mut k, mut l) = izip!(widths.iter(), least_upper.iter(), greatest_lower.iter())
-            //LPS2
+// LPS2
             .map(|(width, &(lmax, li), &(gmin, gi))| (((gmin - lmax) / *width), li, gi))
-            //LPS3
+// LPS3
             .max_by_key(|&(separation, _, _)| NotNaN::from(separation)).unwrap();
 
         if k > l {
@@ -153,9 +156,9 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
                 k -= 1;
             }
         }
-        
+
         assert!(k < l, "k {:?} must be less than l {:?}", k, l);
-        
+
         let mut k_mbr = Rect::max_inverted();
         let k_child = children.remove(k);
         k_child.expand_mbr_to_fit(&mut k_mbr);
@@ -169,7 +172,7 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
         let mut l_children = Vec::new();
         l_children.push(l_child);
 
-        
+
         loop {
             // QS2
             if children.is_empty() {
@@ -196,7 +199,7 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
                 let mut l_expanded = l_mbr.clone();
                 child.expand_mbr_to_fit(&mut l_expanded);
                 let k_area = k_mbr.area();
-                let l_area = l_mbr.area(); 
+                let l_area = l_mbr.area();
                 if (k_expanded.area() - k_area, k_area, k_children.len()) < (l_expanded.area() - l_area, l_area, l_children.len()) {
                     k_mbr = k_expanded;
                     k_children.push(child);
@@ -241,7 +244,7 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
                 //I3
                 if let InsertResult::Split(child) = insert_result {
                     children.push(child);
-                } 
+                }
             }
         }
         //I2 & I3
@@ -258,7 +261,7 @@ impl<P, DIM, LG, T, PS> IndexInsert<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>> for
         LG: MbrLeafGeometry<P, DIM>,
 {
     fn insert_into_root(&self, mut root: RTreeNode<P, DIM, LG, T>, leaf: MbrLeaf<P, DIM, LG, T>) -> RTreeNode<P, DIM, LG, T> {
-        //let mut level_stack = Vec::new();
+// let mut level_stack = Vec::new();
         root
     }
 

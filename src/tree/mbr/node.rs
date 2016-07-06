@@ -12,32 +12,32 @@ use geometry::Rect;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
 
-pub trait MbrNode<P, DIM> : MbrLeafGeometry<P, DIM>
+pub trait MbrNode<P, DIM>: MbrLeafGeometry<P, DIM>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
-/// Create an empty leaf level
+    /// Create an empty leaf level
     fn new_leaves() -> Self;
 
-/// Create an empty leaf level with no capacity for leaves.
-/// Only used for passing ownership of root into the index functions
+    /// Create an empty leaf level with no capacity for leaves.
+    /// Only used for passing ownership of root into the index functions
     fn new_no_alloc() -> Self;
 
-/// Does the level point to leaves?
+    /// Does the level point to leaves?
     fn has_leaves(&self) -> bool;
 
-/// Does the level point to other levels?
+    /// Does the level point to other levels?
     fn has_levels(&self) -> bool;
 
-/// Borrow the level's minimum bounding rectangle
+    /// Borrow the level's minimum bounding rectangle
     fn mbr(&self) -> &Rect<P, DIM>;
 
-/// Mutably borrow the level's minimum bounding rectangle
+    /// Mutably borrow the level's minimum bounding rectangle
     fn mbr_mut(&mut self) -> &mut Rect<P, DIM>;
 
-/// Number of level's children
+    /// Number of level's children
     fn len(&self) -> usize;
 
-/// Does the level have children?
+    /// Does the level have children?
     fn is_empty(&self) -> bool;
 }
 

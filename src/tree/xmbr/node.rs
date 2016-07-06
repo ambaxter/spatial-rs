@@ -34,7 +34,7 @@ pub enum XTreeNode<P, DIM, LG, T>
 impl<P, DIM, LG, T> XTreeNode<P, DIM, LG, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LG: MbrLeafGeometry<P, DIM> 
+          LG: MbrLeafGeometry<P, DIM>
 {
     pub fn is_super(&self) -> bool {
         match *self {

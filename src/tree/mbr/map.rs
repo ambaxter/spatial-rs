@@ -19,12 +19,11 @@ use std::ops::Deref;
 use std::mem;
 
 /// The generic container interface for spatial maps. Will, at the very least, be able to support R, R+, R*, and X trees
-pub struct MbrMap<NODE, I, R>
-{
+pub struct MbrMap<NODE, I, R> {
     insert_index: I,
     remove_index: R,
     root: NODE,
-    len: usize
+    len: usize,
 }
 
 impl<P, DIM, LG, I, R, T> MbrMap<RTreeNode<P, DIM, LG, T>, I, R>
@@ -38,9 +37,9 @@ impl<P, DIM, LG, I, R, T> MbrMap<RTreeNode<P, DIM, LG, T>, I, R>
 /// Create a new MbrMap with the given insert and remove indexes
     pub fn new(insert_index: I, remove_index: R) -> MbrMap<RTreeNode<P, DIM, LG, T>, I, R> {
         let new_root = insert_index.new_leaves();
-        MbrMap{insert_index: insert_index, 
-            remove_index: remove_index, 
-            root: new_root, 
+        MbrMap{insert_index: insert_index,
+            remove_index: remove_index,
+            root: new_root,
             len: 0}
     }
 
@@ -169,7 +168,7 @@ impl<'tree, P, DIM, LG, T, Q> Iterator for LevelIter<'tree, P, DIM, LG, T, Q>
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
           LG: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
-          Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>> 
+          Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>
 {
     type Item = LeafIter<'tree, P, DIM, LG, T>;
 
@@ -237,7 +236,7 @@ impl<'tree, P, DIM, LG, T, Q> LevelIterMut<'tree, P, DIM, LG, T, Q>
 
     unsafe fn unpack_root_lifetime(&mut self) -> &'tree mut RTreeNode<P, DIM, LG, T> {
         let root: *mut RTreeNode<P, DIM, LG, T> = self.root;
-        &mut *root 
+        &mut *root
     }
 
 /// Select the next matching leaves level
@@ -271,7 +270,7 @@ impl<'tree, P, DIM, LG, T, Q> Iterator for LevelIterMut<'tree, P, DIM, LG, T, Q>
           DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
           LG: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
-          Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>> 
+          Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>
 {
     type Item = LeafIterMut<'tree, P, DIM, LG, T>;
 
@@ -334,7 +333,7 @@ impl<'tree, P, DIM, LG, T, Q> Iter<'tree, P, DIM, LG, T, Q>
         Iter{query: rc_query, level_iter: level_iter, leaf_iter: None, finished: false}
     }
 
-    /// Select the next matching leaf
+/// Select the next matching leaf
     fn next_leaf(&mut self, mut iter: SliceIter<'tree, MbrLeaf<P, DIM, LG, T>>) -> Option<(&'tree LG, &'tree T)> {
         while let Some(ref mut leaf) = iter.next() {
                 if !self.query.accept_leaf(leaf) {
@@ -410,7 +409,7 @@ impl<'tree, P, DIM, LG, T, Q> IterMut<'tree, P, DIM, LG, T, Q>
         IterMut{query: rc_query, level_iter: level_iter, leaf_iter: None, finished: false}
     }
 
-    /// Select the next matching leaf
+/// Select the next matching leaf
     fn next_leaf(&mut self, mut iter: SliceIterMut<'tree, MbrLeaf<P, DIM, LG, T>>) -> Option<(&'tree LG, &'tree mut T)> {
         while let Some(ref mut leaf) = iter.next() {
             if !self.query.deref().accept_leaf(leaf) {

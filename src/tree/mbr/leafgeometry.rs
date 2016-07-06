@@ -463,8 +463,6 @@ mod tests {
 
         // area_overlapped_with_mbr
         assert_relative_eq!(1.0f64, zero_one.area_overlapped_with_mbr(&bounding_mbr));
-        assert_relative_eq!(1.0f64,
-                            neg_one_one.area_overlapped_with_mbr(&bounding_mbr));
+        assert_relative_eq!(1.0f64, neg_one_one.area_overlapped_with_mbr(&bounding_mbr));
     }
 }
-

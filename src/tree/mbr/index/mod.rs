@@ -21,13 +21,10 @@ const DONT_FORCE_SPLIT: bool = false;
 /// Insert the leaf into the root
 pub trait IndexInsert<P, DIM, LG, T, NODE>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
-    NODE: MbrNode<P, DIM>
+          NODE: MbrNode<P, DIM>
 {
-    fn insert_into_root(&self,
-                        mut root: NODE,
-                        leaf: MbrLeaf<P, DIM, LG, T>)
-                        -> NODE;
-    
+    fn insert_into_root(&self, mut root: NODE, leaf: MbrLeaf<P, DIM, LG, T>) -> NODE;
+
     fn preferred_min(&self) -> usize;
 
     fn new_leaves(&self) -> NODE;
