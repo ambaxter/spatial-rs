@@ -17,7 +17,7 @@ mod node;
 pub use tree::mbr::leaf::MbrLeaf;
 pub use tree::mbr::leafgeometry::MbrLeafGeometry;
 pub use tree::mbr::map::{Iter, IterMut, MbrMap};
-pub use tree::mbr::node::MbrNode;
+pub use tree::mbr::node::{MbrNode, RTreeNode};
 pub use tree::mbr::query::{MbrQuery, MbrRectQuery};
 use tree::mbr::index::IndexInsert;
 use tree::mbr::index::r::RRemove;
@@ -38,7 +38,7 @@ pub struct RStar<P, DIM, LG, T> {
 }
 
 /// R* Tree Type
-pub type RStarTree<P, DIM, LG, T> =  MbrMap<P, DIM, LG, RStarInsert<P, DIM, LG, T>, RRemove<P, DIM, LG, T>, T>;
+pub type RStarTree<P, DIM, LG, T> =  MbrMap<RTreeNode<P, DIM, LG, T>, RStarInsert<P, DIM, LG, T>, RRemove<P, DIM, LG, T>>;
 
 impl<P, DIM, LG, T> RStar<P, DIM, LG, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,

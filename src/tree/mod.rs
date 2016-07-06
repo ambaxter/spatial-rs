@@ -8,7 +8,7 @@
 //! A collection of spatial trees
 
 pub mod mbr;
-
+pub mod xmbr;
 // TODO: Figure this out later :/
 // pub trait SpatialMap<'tree, P, DIM, LG, LEVEL, T>
 // where DIM: ArrayLength<P> + ArrayLength<(P, P)>,

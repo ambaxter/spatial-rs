@@ -11,7 +11,7 @@ use vecext::{RetainMut, RetainAndAppend};
 use geometry::Rect;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
-use tree::mbr::{MbrNode, MbrQuery, MbrLeaf, MbrLeafGeometry};
+use tree::mbr::{MbrNode, RTreeNode, MbrQuery, MbrLeaf, MbrLeafGeometry};
 use tree::mbr::index::{IndexInsert, IndexRemove, RemoveReturn, AT_ROOT, NOT_AT_ROOT};
 use std::marker::PhantomData;
 use std::mem;
@@ -25,7 +25,7 @@ enum InsertResult<P, DIM, LG, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     Ok,
-    Split(MbrNode<P, DIM, LG, T>),
+    Split(RTreeNode<P, DIM, LG, T>),
 }
 
 pub trait PickSeed<P, DIM, LG, T> 
@@ -34,14 +34,9 @@ pub trait PickSeed<P, DIM, LG, T>
     fn pick_seed<V: MbrLeafGeometry<P, DIM>>(&self, mbr: &Rect<P, DIM>, children: &Vec<V>) -> (usize, usize);
 }
 
-pub struct QuadraticPickSeed<P, DIM, LG, T> {
-    _p: PhantomData<P>,
-    _dim: PhantomData<DIM>,
-    _lg: PhantomData<LG>,
-    _t: PhantomData<T>,
-}
+pub struct QuadraticPickSeed;
 
-impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for QuadraticPickSeed<P, DIM, LG, T> 
+impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for QuadraticPickSeed
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
         LG: MbrLeafGeometry<P, DIM>,
@@ -63,14 +58,9 @@ impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for QuadraticPickSeed<P, DIM, LG, T>
     }
 }
 
-pub struct LinearPickSeed<P, DIM, LG, T> {
-    _p: PhantomData<P>,
-    _dim: PhantomData<DIM>,
-    _lg: PhantomData<LG>,
-    _t: PhantomData<T>,
-}
+pub struct LinearPickSeed;
 
-impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for LinearPickSeed<P, DIM, LG, T> 
+impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for LinearPickSeed
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + ArrayLength<(P, usize)> + Clone,
         LG: MbrLeafGeometry<P, DIM>,
@@ -145,7 +135,7 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
         (NotNaN::from(area_cost), NotNaN::from(expanded_area))
     }
 
-    fn choose_subnode<'tree>(&self, level: &'tree mut Vec<MbrNode<P, DIM, LG, T>>, leaf: &MbrLeaf<P, DIM, LG, T>) -> &'tree mut MbrNode<P, DIM, LG, T> {
+    fn choose_subnode<'tree>(&self, level: &'tree mut Vec<RTreeNode<P, DIM, LG, T>>, leaf: &MbrLeaf<P, DIM, LG, T>) -> &'tree mut RTreeNode<P, DIM, LG, T> {
         assert!(!level.is_empty(), "Level should not be empty!");
         level.iter_mut().min_by_key(|a| self.area_cost(a.mbr(), leaf)).unwrap()
     }
@@ -222,30 +212,30 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
     }
 
     //OT1
-    fn handle_overflow(&self, level: &mut MbrNode<P, DIM, LG, T>) -> InsertResult<P, DIM, LG, T> {
+    fn handle_overflow(&self, level: &mut RTreeNode<P, DIM, LG, T>) -> InsertResult<P, DIM, LG, T> {
         match *level {
-                MbrNode::Leaves{ref mut mbr, ref mut children} => {
+                RTreeNode::Leaves{ref mut mbr, ref mut children} => {
                     // Split
                     let (split_mbr, split_children) = self.split(mbr, children);
-                    InsertResult::Split(MbrNode::Leaves{mbr: split_mbr, children: split_children})
+                    InsertResult::Split(RTreeNode::Leaves{mbr: split_mbr, children: split_children})
                 },
-                MbrNode::Level{ref mut mbr, ref mut children} => {
+                RTreeNode::Level{ref mut mbr, ref mut children} => {
                     let (split_mbr, split_children) = self.split(mbr, children);
-                    InsertResult::Split(MbrNode::Level{mbr: split_mbr, children: split_children})
+                    InsertResult::Split(RTreeNode::Level{mbr: split_mbr, children: split_children})
                 },
         }
     }
 
-    fn insert_into_level(&self, level: &mut MbrNode<P, DIM, LG, T>, leaf: MbrLeaf<P, DIM, LG, T>) -> InsertResult<P, DIM, LG, T> {
+    fn insert_into_level(&self, level: &mut RTreeNode<P, DIM, LG, T>, leaf: MbrLeaf<P, DIM, LG, T>) -> InsertResult<P, DIM, LG, T> {
         //I4
         leaf.geometry.expand_mbr_to_fit(level.mbr_mut());
         match *level {
             //I2
-            MbrNode::Leaves{ref mut children, ..} => {
+            RTreeNode::Leaves{ref mut children, ..} => {
                 children.push(leaf);
             },
             //I1
-            MbrNode::Level{ref mut mbr, ref mut children} => {
+            RTreeNode::Level{ref mut mbr, ref mut children} => {
                 //CS3
                 let insert_result = self.insert_into_level(self.choose_subnode(children, &leaf), leaf);
                 //I3
@@ -262,12 +252,12 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
     }
 }
 
-impl<P, DIM, LG, T, PS> IndexInsert<P, DIM, LG, T> for RInsert<P, DIM, LG, T, PS>
+impl<P, DIM, LG, T, PS> IndexInsert<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>> for RInsert<P, DIM, LG, T, PS>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
         LG: MbrLeafGeometry<P, DIM>,
 {
-    fn insert_into_root(&self, mut root: MbrNode<P, DIM, LG, T>, leaf: MbrLeaf<P, DIM, LG, T>) -> MbrNode<P, DIM, LG, T> {
+    fn insert_into_root(&self, mut root: RTreeNode<P, DIM, LG, T>, leaf: MbrLeaf<P, DIM, LG, T>) -> RTreeNode<P, DIM, LG, T> {
         //let mut level_stack = Vec::new();
         root
     }
@@ -276,12 +266,12 @@ impl<P, DIM, LG, T, PS> IndexInsert<P, DIM, LG, T> for RInsert<P, DIM, LG, T, PS
         self.preferred_min
     }
 
-    fn new_leaves(&self) -> MbrNode<P, DIM, LG, T> {
-        MbrNode::new_leaves()
+    fn new_leaves(&self) -> RTreeNode<P, DIM, LG, T> {
+        RTreeNode::new_leaves()
     }
 
-    fn new_no_alloc_leaves(&self) -> MbrNode<P, DIM, LG, T> {
-        MbrNode::new_no_alloc()
+    fn new_no_alloc_leaves(&self) -> RTreeNode<P, DIM, LG, T> {
+        RTreeNode::new_no_alloc()
     }
 }
 
@@ -313,7 +303,7 @@ impl<P, DIM, LG, T> RRemove<P, DIM, LG, T>
     }
 
 /// Removes matching leaves from a leaf level. Return true if the level should be retianed
-    fn remove_matching_leaves<Q: MbrQuery<P, DIM, LG, T>, F: FnMut(&T) -> bool>(&self, query: &Q, mbr: &mut Rect<P, DIM>, children: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
+    fn remove_matching_leaves<Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>, F: FnMut(&T) -> bool>(&self, query: &Q, mbr: &mut Rect<P, DIM>, children: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
         removed: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
         to_reinsert: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
         f: &mut F,
@@ -338,17 +328,17 @@ impl<P, DIM, LG, T> RRemove<P, DIM, LG, T>
     }
 
 /// Consume all child leaves and queue them for reinsert
-    fn consume_leaves_for_reinsert(&self, nodes: &mut Vec<MbrNode<P, DIM, LG, T>>, to_reinsert: &mut Vec<MbrLeaf<P, DIM, LG, T>>) {
+    fn consume_leaves_for_reinsert(&self, nodes: &mut Vec<RTreeNode<P, DIM, LG, T>>, to_reinsert: &mut Vec<MbrLeaf<P, DIM, LG, T>>) {
         for node in nodes {
             match *node {
-                MbrNode::Leaves{ref mut children, ..} => to_reinsert.append(&mut mem::replace(children, Vec::with_capacity(0))),
-                MbrNode::Level{ref mut children, ..} => self.consume_leaves_for_reinsert(children, to_reinsert)
+                RTreeNode::Leaves{ref mut children, ..} => to_reinsert.append(&mut mem::replace(children, Vec::with_capacity(0))),
+                RTreeNode::Level{ref mut children, ..} => self.consume_leaves_for_reinsert(children, to_reinsert)
             }
         }
     }
 
 /// Recursively remove leaves from a level. Return true if the level should be retianed
-    fn remove_leaves_from_level<Q: MbrQuery<P, DIM, LG, T>, F: FnMut(&T) -> bool>(&self, query: &Q, level: &mut MbrNode<P, DIM, LG, T>,
+    fn remove_leaves_from_level<Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>, F: FnMut(&T) -> bool>(&self, query: &Q, level: &mut RTreeNode<P, DIM, LG, T>,
         removed: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
         to_reinsert: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
         f: &mut F,
@@ -357,8 +347,8 @@ impl<P, DIM, LG, T> RRemove<P, DIM, LG, T>
                 return true;
             }
             match *level {
-                MbrNode::Leaves{ref mut mbr, ref mut children, ..} => return self.remove_matching_leaves(query, mbr, children, removed, to_reinsert, f, at_root),
-                MbrNode::Level{ref mut mbr, ref mut children, ..} => {
+                RTreeNode::Leaves{ref mut mbr, ref mut children, ..} => return self.remove_matching_leaves(query, mbr, children, removed, to_reinsert, f, at_root),
+                RTreeNode::Level{ref mut mbr, ref mut children, ..} => {
                     let orig_len = children.len();
                     children.retain_mut(|child| self.remove_leaves_from_level(query, child, removed, to_reinsert, f, NOT_AT_ROOT));
                     let children_removed = orig_len != children.len();
@@ -379,17 +369,17 @@ impl<P, DIM, LG, T> RRemove<P, DIM, LG, T>
 }
 
 
-impl<P, DIM, LG, T, I> IndexRemove<P, DIM, LG, T, I> for RRemove<P, DIM, LG, T>
+impl<P, DIM, LG, T, I> IndexRemove<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>, I > for RRemove<P, DIM, LG, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
         LG: MbrLeafGeometry<P, DIM>,
-        I: IndexInsert<P, DIM, LG, T>,
+        I: IndexInsert<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>,
 {
-    fn remove_from_root<Q: MbrQuery<P, DIM, LG, T>, F: FnMut(&T) -> bool>(&self,
-        mut root: MbrNode<P, DIM, LG, T>,
+    fn remove_from_root<Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>, F: FnMut(&T) -> bool>(&self,
+        mut root: RTreeNode<P, DIM, LG, T>,
         insert_index: &I,
         query: Q,
-        mut f: F) -> RemoveReturn<P, DIM, LG, T> {
+        mut f: F) -> RemoveReturn<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>> {
 
             if root.is_empty() {
                 (root, Vec::with_capacity(0))

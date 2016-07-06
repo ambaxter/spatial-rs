@@ -13,6 +13,7 @@ The march to 0.2.0:
 - [x] Bug-fix: iter_mut and query_mut should take &mut self to provide Isolation guarantees
 - [ ] R-Tree: ~~implement~~, document, test, and benchmark
 - [ ] X-Tree: implement, document, test, and benchmark
+- [x] Pull out XMbrNode and MbrNode as a trait. Modify everything to use that trait 
 - [x] Performance improvement: Remove UnpackRwLocks and PackRwLocks requirement
 - [ ] Examples in documentation, README.md
 - [ ] Changelog

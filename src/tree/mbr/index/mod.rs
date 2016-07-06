@@ -19,33 +19,35 @@ const FORCE_SPLIT: bool = true;
 const DONT_FORCE_SPLIT: bool = false;
 
 /// Insert the leaf into the root
-pub trait IndexInsert<P, DIM, LG, T>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
+pub trait IndexInsert<P, DIM, LG, T, NODE>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
+    NODE: MbrNode<P, DIM>
 {
     fn insert_into_root(&self,
-                        mut root: MbrNode<P, DIM, LG, T>,
+                        mut root: NODE,
                         leaf: MbrLeaf<P, DIM, LG, T>)
-                        -> MbrNode<P, DIM, LG, T>;
+                        -> NODE;
     
     fn preferred_min(&self) -> usize;
 
-    fn new_leaves(&self) -> MbrNode<P, DIM, LG, T>;
+    fn new_leaves(&self) -> NODE;
 
-    fn new_no_alloc_leaves(&self) -> MbrNode<P, DIM, LG, T>;
+    fn new_no_alloc_leaves(&self) -> NODE;
 }
 
-pub type RemoveReturn<P, DIM, LG, T> = (MbrNode<P, DIM, LG, T>, Vec<MbrLeaf<P, DIM, LG, T>>);
+pub type RemoveReturn<P, DIM, LG, T, NODE> = (NODE, Vec<MbrLeaf<P, DIM, LG, T>>);
 
 /// Remove entries from the tree that match the query, but not the retain function f.
-pub trait IndexRemove<P, DIM, LG, T, I>
+pub trait IndexRemove<P, DIM, LG, T, NODE, I>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
-          I: IndexInsert<P, DIM, LG, T>
+          NODE: MbrNode<P, DIM>,
+          I: IndexInsert<P, DIM, LG, T, NODE>
 {
-    fn remove_from_root<Q: MbrQuery<P, DIM, LG, T>, F: FnMut(&T) -> bool>
+    fn remove_from_root<Q: MbrQuery<P, DIM, LG, T, NODE>, F: FnMut(&T) -> bool>
         (&self,
-         mut root: MbrNode<P, DIM, LG, T>,
+         mut root: NODE,
          insert_index: &I,
          query: Q,
          mut f: F)
-         -> RemoveReturn<P, DIM, LG, T>;
+         -> RemoveReturn<P, DIM, LG, T, NODE>;
 }

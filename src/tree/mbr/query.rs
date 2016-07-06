@@ -13,13 +13,13 @@ use std::fmt::Debug;
 use generic_array::ArrayLength;
 
 /// Query trait for navigating the tree
-pub trait MbrQuery<P, DIM, LG, T>
+pub trait MbrQuery<P, DIM, LG, T, NODE>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
     /// Returns true if the leaf matches the query
     fn accept_leaf(&self, leaf: &MbrLeaf<P, DIM, LG, T>) -> bool;
     /// Returns true if the level matches the query
-    fn accept_level(&self, level: &MbrNode<P, DIM, LG, T>) -> bool;
+    fn accept_level(&self, level: &NODE) -> bool;
 }
 
 /// Rect based query
@@ -33,10 +33,11 @@ pub enum MbrRectQuery<P, DIM>
     Overlaps(Rect<P, DIM>),
 }
 
-impl<P, DIM, LG, T> MbrQuery<P, DIM, LG, T> for MbrRectQuery<P, DIM>
+impl<P, DIM, LG, T, NODE> MbrQuery<P, DIM, LG, T, NODE> for MbrRectQuery<P, DIM>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
           DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LG: MbrLeafGeometry<P, DIM>
+          LG: MbrLeafGeometry<P, DIM>,
+          NODE: MbrNode<P, DIM>
 {
 
 // Does this query accept the given leaf?
@@ -48,7 +49,7 @@ impl<P, DIM, LG, T> MbrQuery<P, DIM, LG, T> for MbrRectQuery<P, DIM>
     }
 
 // Does this query accept the given level?
-    fn accept_level(&self, level: &MbrNode<P, DIM, LG, T>) -> bool {
+    fn accept_level(&self, level: &NODE) -> bool {
         match *self {
             MbrRectQuery::ContainedBy(ref query) => level.overlapped_by_mbr(query),
             MbrRectQuery::Overlaps(ref query) => level.overlapped_by_mbr(query),

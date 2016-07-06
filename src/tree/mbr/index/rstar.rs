@@ -8,7 +8,7 @@
 use num::{Zero, Signed, Float, Bounded, ToPrimitive, FromPrimitive};
 use std::ops::{MulAssign, AddAssign, Range, Deref};
 use tree::mbr::index::{IndexInsert, D_MAX, AT_ROOT, NOT_AT_ROOT, FORCE_SPLIT, DONT_FORCE_SPLIT};
-use tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode};
+use tree::mbr::{MbrNode, MbrLeaf, MbrLeafGeometry, RTreeNode};
 use geometry::Rect;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -42,7 +42,7 @@ enum InsertResult<P, DIM, LG, T>
 {
     Ok,
     Reinsert(Vec<MbrLeaf<P, DIM, LG, T>>),
-    Split(MbrNode<P, DIM, LG, T>),
+    Split(RTreeNode<P, DIM, LG, T>),
 }
 
 impl<P, DIM, LG, T> InsertResult<P, DIM, LG, T>
@@ -133,7 +133,7 @@ impl<P, DIM, LG, T> RStarInsert<P, DIM, LG, T>
     }
 
 // CS2 + optimizations
-    fn choose_subnode<'tree>(&self, level: &'tree mut Vec<MbrNode<P, DIM, LG, T>>, leaf: &MbrLeaf<P, DIM, LG, T>) -> &'tree mut MbrNode<P, DIM, LG, T> {
+    fn choose_subnode<'tree>(&self, level: &'tree mut Vec<RTreeNode<P, DIM, LG, T>>, leaf: &MbrLeaf<P, DIM, LG, T>) -> &'tree mut RTreeNode<P, DIM, LG, T> {
         assert!(!level.is_empty(), "Level should not be empty!");
         if level.first().unwrap().has_leaves() {
             if level.len() > self.choose_subtree_p {
@@ -159,16 +159,16 @@ impl<P, DIM, LG, T> RStarInsert<P, DIM, LG, T>
         split
     }
 
-    fn insert_into_level(&self, level: &mut MbrNode<P, DIM, LG, T>, leaf: MbrLeaf<P, DIM, LG, T>, at_root: bool, force_split: bool) -> InsertResult<P, DIM, LG, T> {
+    fn insert_into_level(&self, level: &mut RTreeNode<P, DIM, LG, T>, leaf: MbrLeaf<P, DIM, LG, T>, at_root: bool, force_split: bool) -> InsertResult<P, DIM, LG, T> {
         //I4
         leaf.geometry.expand_mbr_to_fit(level.mbr_mut());
         match *level {
             //I2
-            MbrNode::Leaves{ref mut children, ..} => {
+            RTreeNode::Leaves{ref mut children, ..} => {
                 children.push(leaf);
             },
             //I1
-            MbrNode::Level{ref mut mbr, ref mut children} => {
+            RTreeNode::Level{ref mut mbr, ref mut children} => {
                 //CS3
                 let insert_result = self.insert_into_level(self.choose_subnode(children, &leaf), leaf, NOT_AT_ROOT, force_split);
                 //I3
@@ -268,42 +268,42 @@ impl<P, DIM, LG, T> RStarInsert<P, DIM, LG, T>
     }
 
     //OT1
-    fn handle_overflow(&self, level: &mut MbrNode<P, DIM, LG, T>, at_root: bool, force_split: bool) -> InsertResult<P, DIM, LG, T> {
+    fn handle_overflow(&self, level: &mut RTreeNode<P, DIM, LG, T>, at_root: bool, force_split: bool) -> InsertResult<P, DIM, LG, T> {
         if !at_root && !force_split {
             match *level {
-                MbrNode::Leaves{ref mut mbr, ref mut children} => return InsertResult::Reinsert(self.split_for_reinsert(mbr, children)),
+                RTreeNode::Leaves{ref mut mbr, ref mut children} => return InsertResult::Reinsert(self.split_for_reinsert(mbr, children)),
                 _ => unreachable!(),
             }
 
         }
         match *level {
-                MbrNode::Leaves{ref mut mbr, ref mut children} => {
+                RTreeNode::Leaves{ref mut mbr, ref mut children} => {
                     let (split_mbr, split_children) = self.split(mbr,children);
-                    InsertResult::Split(MbrNode::Leaves{mbr: split_mbr, children: split_children})
+                    InsertResult::Split(RTreeNode::Leaves{mbr: split_mbr, children: split_children})
                 },
-                MbrNode::Level{ref mut mbr, ref mut children} => {
+                RTreeNode::Level{ref mut mbr, ref mut children} => {
                     let (split_mbr, split_children) = self.split(mbr, children);
-                    InsertResult::Split(MbrNode::Level{mbr: split_mbr, children: split_children})
+                    InsertResult::Split(RTreeNode::Level{mbr: split_mbr, children: split_children})
                 },
         }
     }
 
-    fn handle_split_root(&self, root: MbrNode<P, DIM, LG, T>, split: MbrNode<P, DIM, LG, T>) -> MbrNode<P, DIM, LG, T> {
+    fn handle_split_root(&self, root: RTreeNode<P, DIM, LG, T>, split: RTreeNode<P, DIM, LG, T>) -> RTreeNode<P, DIM, LG, T> {
         let mut split_mbr = Rect::max_inverted();
         root.expand_mbr_to_fit(&mut split_mbr);
         let mut split_children = Vec::new();
         split_children.push(root);
         split_children.push(split);
-        MbrNode::Level{mbr: split_mbr, children: split_children}
+        RTreeNode::Level{mbr: split_mbr, children: split_children}
     }
 }
 
-impl<P, DIM, LG, T> IndexInsert<P, DIM, LG, T> for RStarInsert<P, DIM, LG, T>
+impl<P, DIM, LG, T> IndexInsert<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>> for RStarInsert<P, DIM, LG, T>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
         LG: MbrLeafGeometry<P, DIM>,
 {
-    fn insert_into_root(&self, mut root: MbrNode<P, DIM, LG, T>, leaf: MbrLeaf<P, DIM, LG, T>) -> MbrNode<P, DIM, LG, T> {
+    fn insert_into_root(&self, mut root: RTreeNode<P, DIM, LG, T>, leaf: MbrLeaf<P, DIM, LG, T>) -> RTreeNode<P, DIM, LG, T> {
         let insert_results = self.insert_into_level(&mut root, leaf, FORCE_SPLIT, DONT_FORCE_SPLIT);
         match insert_results {
             InsertResult::Split(child) => {
@@ -330,12 +330,12 @@ impl<P, DIM, LG, T> IndexInsert<P, DIM, LG, T> for RStarInsert<P, DIM, LG, T>
         self.preferred_min
     }
 
-    fn new_leaves(&self) -> MbrNode<P, DIM, LG, T> {
-        MbrNode::new_leaves()
+    fn new_leaves(&self) -> RTreeNode<P, DIM, LG, T> {
+        RTreeNode::new_leaves()
     }
 
-    fn new_no_alloc_leaves(&self) -> MbrNode<P, DIM, LG, T> {
-        MbrNode::new_no_alloc()
+    fn new_no_alloc_leaves(&self) -> RTreeNode<P, DIM, LG, T> {
+        RTreeNode::new_no_alloc()
     }
 }
 
