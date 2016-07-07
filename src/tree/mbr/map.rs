@@ -28,7 +28,7 @@ pub struct MbrMap<NODE, I, R> {
 
 impl<P, DIM, LG, I, R, T> MbrMap<RTreeNode<P, DIM, LG, T>, I, R>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
-          DIM: ArrayLength<P> + ArrayLength<(P,P)> + Clone,
+          DIM: ArrayLength<P> + ArrayLength<(P,P)> + ArrayLength<(P, usize)> + Clone,
           LG: MbrLeafGeometry<P, DIM>,
           I: IndexInsert<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>,
           R: IndexRemove<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>, I>,
@@ -110,7 +110,7 @@ type LeafIter<'tree, P, DIM, LG, T> = SliceIter<'tree, MbrLeaf<P, DIM, LG, T>>;
 /// Iterate through all `MbrNode::Leaves` matching a query
 struct LevelIter<'tree, P, DIM, LG, T, Q>
     where P: 'tree,
-          DIM: ArrayLength<P> + ArrayLength<(P, P)> + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P, P)> + ArrayLength<(P, usize)> + 'tree,
           LG: 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>
@@ -123,7 +123,7 @@ struct LevelIter<'tree, P, DIM, LG, T, Q>
 
 impl<'tree, P, DIM, LG, T, Q> LevelIter<'tree, P, DIM, LG, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
-          DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P,P)> + ArrayLength<(P, usize)> + 'tree,
           LG: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>
@@ -165,7 +165,7 @@ impl<'tree, P, DIM, LG, T, Q> LevelIter<'tree, P, DIM, LG, T, Q>
 
 impl<'tree, P, DIM, LG, T, Q> Iterator for LevelIter<'tree, P, DIM, LG, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
-          DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P,P)> + ArrayLength<(P, usize)> + 'tree,
           LG: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>
@@ -207,7 +207,7 @@ type LeafIterMut<'tree, P, DIM, LG, T> = SliceIterMut<'tree, MbrLeaf<P, DIM, LG,
 /// Iterate mutably through all `MbrNode::Leaves` matching a query
 struct LevelIterMut<'tree, P, DIM, LG, T, Q>
     where P: 'tree,
-          DIM: ArrayLength<P> + ArrayLength<(P, P)> + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P, P)> + ArrayLength<(P, usize)> + 'tree,
           LG: 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>
@@ -220,7 +220,7 @@ struct LevelIterMut<'tree, P, DIM, LG, T, Q>
 
 impl<'tree, P, DIM, LG, T, Q> LevelIterMut<'tree, P, DIM, LG, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
-          DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P,P)> + ArrayLength<(P, usize)> + 'tree,
           LG: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>
@@ -267,7 +267,7 @@ impl<'tree, P, DIM, LG, T, Q> LevelIterMut<'tree, P, DIM, LG, T, Q>
 
 impl<'tree, P, DIM, LG, T, Q> Iterator for LevelIterMut<'tree, P, DIM, LG, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
-          DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P,P)> + ArrayLength<(P, usize)> + 'tree,
           LG: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>
@@ -308,7 +308,7 @@ impl<'tree, P, DIM, LG, T, Q> Iterator for LevelIterMut<'tree, P, DIM, LG, T, Q>
 /// Iter all `Leaf` items matching a query
 pub struct Iter<'tree, P, DIM, LG, T, Q>
     where P: 'tree,
-          DIM: ArrayLength<P> + ArrayLength<(P, P)> + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P, P)> + ArrayLength<(P, usize)> + 'tree,
           LG: 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>
@@ -321,7 +321,7 @@ pub struct Iter<'tree, P, DIM, LG, T, Q>
 
 impl<'tree, P, DIM, LG, T, Q> Iter<'tree, P, DIM, LG, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
-          DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P,P)> + ArrayLength<(P, usize)> + 'tree,
           LG: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>
@@ -348,7 +348,7 @@ impl<'tree, P, DIM, LG, T, Q> Iter<'tree, P, DIM, LG, T, Q>
 
 impl<'tree, P, DIM, LG, T, Q> Iterator for Iter<'tree, P, DIM, LG, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
-          DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P,P)> + ArrayLength<(P, usize)> + 'tree,
           LG: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>
@@ -384,7 +384,7 @@ impl<'tree, P, DIM, LG, T, Q> Iterator for Iter<'tree, P, DIM, LG, T, Q>
 /// Mutably iterate all `Leaf` entries matching a query
 pub struct IterMut<'tree, P, DIM, LG, T, Q>
     where P: 'tree,
-          DIM: ArrayLength<P> + ArrayLength<(P, P)> + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P, P)> + ArrayLength<(P, usize)> + 'tree,
           LG: 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>
@@ -397,7 +397,7 @@ pub struct IterMut<'tree, P, DIM, LG, T, Q>
 
 impl<'tree, P, DIM, LG, T, Q> IterMut<'tree, P, DIM, LG, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
-          DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P,P)> + ArrayLength<(P, usize)> + 'tree,
           LG: MbrLeafGeometry<P, DIM> + 'tree,
           T: 'tree,
           Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>
@@ -428,7 +428,7 @@ impl<'tree, P, DIM, LG, T, Q> IterMut<'tree, P, DIM, LG, T, Q>
 
 impl<'tree, P, DIM, LG, T, Q> Iterator for IterMut<'tree, P, DIM, LG, T, Q>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default + 'tree,
-          DIM: ArrayLength<P> + ArrayLength<(P,P)> + 'tree,
+          DIM: ArrayLength<P> + ArrayLength<(P,P)> + ArrayLength<(P, usize)> + 'tree,
           LG: MbrLeafGeometry<P, DIM>,
           T: 'tree,
           Q: MbrQuery<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>>

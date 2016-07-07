@@ -8,10 +8,10 @@ Currently only implements R* Tree, but I'm trying to keep it generic enough wher
 # Roadmap
 
 The march to 0.2.0:
-- [ ] Inevitable bug fixes
-- [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
+- [x] Bug-fix: Splitting root resulted in incorrect mbrs
 - [x] Bug-fix: iter_mut and query_mut should take &mut self to provide Isolation guarantees
-- [ ] R-Tree: ~~implement~~, document, test, and benchmark
+- [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
+- [x] R-Tree: implement, document, test, and benchmark
 - [ ] X-Tree: implement, document, test, and benchmark
 - [x] Pull out XMbrNode and MbrNode as a trait. Modify everything to use that trait 
 - [x] Performance improvement: Remove UnpackRwLocks and PackRwLocks requirement
@@ -26,13 +26,15 @@ The march to 0.2.0:
 - [ ] Move the tree iterator code into macros?
 - [ ] Macro so users can create their own Shapes enum?
 - [ ] Example application - SLD2 application - insert point at mouse click to visualize the tree
-- [ ] test and benchmark individual Index functions as opposed to simply the overall tree
+- [ ] test and benchmark individual Index functions in addition to the overall tree
+- [ ] macro benchmarks to reduce loc
 - [ ] ???
 
 0.4.0:
 - [ ] Inevitable bug fixes
 - [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
 - [ ] Performance improvement: remove recursion - add another unsafe area :/
+- [ ] Performance improvement: Tune children size based off memory block size
 - [ ] Performance improvement: Use lifeguard with MbrNode
 - [ ] Auto-guess performance variables?
 - [ ] ???
@@ -40,7 +42,7 @@ The march to 0.2.0:
 0.5.0:
 - [ ] Inevitable bug fixes
 - [ ] Interface changes and code reorganization expected
-- [ ] R+Tree: implement, document, test, and benchmark (moved because implementation requires T: + Clone for mbrmap)
+- [ ] R+Tree: implement, document, test, and benchmark (moved because implementation requires T: + Clone for mbrmap. Is it even a desired feature?)
 - [ ] Fast tree creation from sorted data
 - [ ] ???
 

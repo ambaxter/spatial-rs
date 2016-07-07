@@ -12,7 +12,7 @@ use geometry::Rect;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
 use tree::mbr::{MbrNode, RTreeNode, MbrQuery, MbrLeaf, MbrLeafGeometry};
-use tree::mbr::index::{IndexInsert, IndexRemove, RemoveReturn, AT_ROOT, NOT_AT_ROOT};
+use tree::mbr::index::{IndexInsert, IndexRemove, RemoveReturn, D_MAX, AT_ROOT, NOT_AT_ROOT};
 use std::marker::PhantomData;
 use std::mem;
 use ordered_float::NotNaN;
@@ -129,6 +129,23 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
         LG: MbrLeafGeometry<P, DIM>,
         PS: PickSeed<P, DIM, LG, T>,
 {
+
+    pub fn new<S: PickSeed<P, DIM, LG, T>>(pick_seed: S) -> RInsert<P, DIM, LG, T, S> {
+// TODO: This type specification shouldn't be needed?
+        RInsert::<P, DIM, LG, T, S>::new_with_max(pick_seed, D_MAX)
+    }
+
+    pub fn new_with_max<S: PickSeed<P, DIM, LG, T>>(pick_seed: S, max: usize) -> RInsert<P, DIM, LG, T, S> {
+        let min = (max as f32 * 0.3f32) as usize;
+        RInsert{preferred_min: min,
+            max: max,
+            pick_seed: pick_seed,
+            _p: PhantomData,
+            _dim: PhantomData,
+            _lg: PhantomData,
+            _t: PhantomData}
+    }
+
     fn area_cost(&self, mbr: &Rect<P, DIM>, leaf: &MbrLeaf<P, DIM, LG, T>) -> (NotNaN<P>, NotNaN<P>) {
         let mut expanded = mbr.clone();
         leaf.expand_mbr_to_fit(&mut expanded);
@@ -238,7 +255,7 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
                 children.push(leaf);
             },
             //I1
-            RTreeNode::Level{ref mut mbr, ref mut children} => {
+            RTreeNode::Level{ref mut children, ..} => {
                 //CS3
                 let insert_result = self.insert_into_level(self.choose_subnode(children, &leaf), leaf);
                 //I3
@@ -258,10 +275,17 @@ impl<P, DIM, LG, T, PS> RInsert<P, DIM, LG, T, PS>
 impl<P, DIM, LG, T, PS> IndexInsert<P, DIM, LG, T, RTreeNode<P, DIM, LG, T>> for RInsert<P, DIM, LG, T, PS>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
+        PS: PickSeed<P, DIM, LG, T>,
         LG: MbrLeafGeometry<P, DIM>,
 {
     fn insert_into_root(&self, mut root: RTreeNode<P, DIM, LG, T>, leaf: MbrLeaf<P, DIM, LG, T>) -> RTreeNode<P, DIM, LG, T> {
-// let mut level_stack = Vec::new();
+        let result = self.insert_into_level(&mut root, leaf);
+        if let InsertResult::Split(split) = result {
+            let mut mbr = root.mbr().clone();
+            split.expand_mbr_to_fit(&mut mbr);
+            let children = vec![root, split];
+            root = RTreeNode::Level{mbr: mbr, children: children};
+        }
         root
     }
 

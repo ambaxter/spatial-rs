@@ -289,12 +289,9 @@ impl<P, DIM, LG, T> RStarInsert<P, DIM, LG, T>
     }
 
     fn handle_split_root(&self, root: RTreeNode<P, DIM, LG, T>, split: RTreeNode<P, DIM, LG, T>) -> RTreeNode<P, DIM, LG, T> {
-        let mut split_mbr = Rect::max_inverted();
-        root.expand_mbr_to_fit(&mut split_mbr);
-        let mut split_children = Vec::new();
-        split_children.push(root);
-        split_children.push(split);
-        RTreeNode::Level{mbr: split_mbr, children: split_children}
+        let mut mbr = root.mbr().clone();
+        split.expand_mbr_to_fit(&mut mbr);
+        RTreeNode::Level{mbr: mbr, children: vec![root, split]}
     }
 }
 

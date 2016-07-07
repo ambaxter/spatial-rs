@@ -24,4 +24,4 @@ pub mod geometry;
 pub mod tree;
 mod vecext;
 
-pub use tree::mbr::{RStar, RStarTree};
+pub use tree::mbr::{RTree, RQuadraticTree, RLinearTree, RStar, RStarTree};

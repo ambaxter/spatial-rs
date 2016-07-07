@@ -12,6 +12,7 @@ use geometry::Rect;
 use std::fmt::Debug;
 use generic_array::ArrayLength;
 
+/// A node in an MbrMap
 pub trait MbrNode<P, DIM>: MbrLeafGeometry<P, DIM>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
