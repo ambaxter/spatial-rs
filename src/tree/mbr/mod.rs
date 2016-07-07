@@ -65,22 +65,22 @@ impl<P, DIM, LG, T> RTree<P, DIM, LG, T>
 /// Create a new R Tree using the Linear splitting algorithm with min and max children lengths set to 19 and 64, respectively
     pub fn new_linear() -> RLinearTree<P, DIM, LG, T> {
 // TODO: This type specification shouldn't be needed? Compliation error without them :/
-        RTree::map_from_insert(RInsert::<P, DIM, LG, T, SeedSplit<P, DIM, LG, T, Linear>>::new(SeedSplit::<P, DIM, LG, T, Linear>::linear()))
+        RTree::map_from_insert(RInsert::new(SeedSplit::<P, DIM, LG, T, Linear>::linear()))
     }
 
 /// Create a new R Tree using the Linear splitting algorithm with max children lengths as provided. min length will be set to 0.3 * max
     pub fn new_linear_with_max(max: usize) -> RLinearTree<P, DIM, LG, T> {
-        RTree::map_from_insert(RInsert::<P, DIM, LG, T, SeedSplit<P, DIM, LG, T, Linear>>::new_with_max(SeedSplit::<P, DIM, LG, T, Linear>::linear(), max))
+        RTree::map_from_insert(RInsert::new_with_max(SeedSplit::<P, DIM, LG, T, Linear>::linear(), max))
     }
 
 /// Create a new R Tree using the Quadratic splitting algorithm with min and max children lengths set to 19 and 64, respectively
     pub fn new_quadratic() -> RQuadraticTree<P, DIM, LG, T> {
-        RTree::map_from_insert(RInsert::<P, DIM, LG, T, SeedSplit<P, DIM, LG, T, Quadratic>>::new(SeedSplit::<P, DIM, LG, T, Quadratic>::quadratic()))
+        RTree::map_from_insert(RInsert::new(SeedSplit::<P, DIM, LG, T, Quadratic>::quadratic()))
     }
 
 /// Create a new R Tree using the Quadratic splitting algorithm with max children lengths as provided. min length will be set to 0.3 * max
     pub fn new_quadratic_with_max(max: usize) -> RQuadraticTree<P, DIM, LG, T> {
-        RTree::map_from_insert(RInsert::<P, DIM, LG, T, SeedSplit<P, DIM, LG, T, Quadratic>>::new_with_max(SeedSplit::<P, DIM, LG, T, Quadratic>::quadratic(), max))
+        RTree::map_from_insert(RInsert::new_with_max(SeedSplit::<P, DIM, LG, T, Quadratic>::quadratic(), max))
     }
 
     fn map_from_insert<S: MbrNodeSplit<P, DIM>>(insert: RInsert<P, DIM, LG, T, S>) -> MbrMap<RTreeNode<P, DIM, LG, T>,

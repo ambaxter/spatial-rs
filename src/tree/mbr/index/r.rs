@@ -124,7 +124,6 @@ impl<P, DIM, LG, T, PS> SeedSplit<P, DIM, LG, T, PS>
     where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
         LG: MbrLeafGeometry<P, DIM>,
-        PS: PickSeed<P, DIM, LG, T>,
 {
     pub fn linear() -> SeedSplit<P, DIM, LG, T, Linear> {
         SeedSplit{pick_seed: Linear,
@@ -240,12 +239,12 @@ impl<P, DIM, LG, T, NS> RInsert<P, DIM, LG, T, NS>
         NS: MbrNodeSplit<P, DIM>,
 {
 
-    pub fn new<S: MbrNodeSplit<P, DIM>>(splitter: S) -> RInsert<P, DIM, LG, T, S> {
+    pub fn new(splitter: NS) -> RInsert<P, DIM, LG, T, NS> {
 // TODO: This type specification shouldn't be needed?
-        RInsert::<P, DIM, LG, T, S>::new_with_max(splitter, D_MAX)
+        RInsert::new_with_max(splitter, D_MAX)
     }
 
-    pub fn new_with_max<S: MbrNodeSplit<P, DIM>>(splitter: S, max: usize) -> RInsert<P, DIM, LG, T, S> {
+    pub fn new_with_max(splitter: NS, max: usize) -> RInsert<P, DIM, LG, T, NS> {
         let min = (max as f32 * 0.3f32) as usize;
         RInsert{preferred_min: min,
             max: max,
