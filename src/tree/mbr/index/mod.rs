@@ -8,7 +8,8 @@
 //! Specific implementations for inserting and removing leaves
 
 use generic_array::ArrayLength;
-use tree::mbr::{MbrNode, MbrLeaf, MbrQuery};
+use tree::mbr::{MbrNode, MbrLeaf, MbrQuery, MbrLeafGeometry};
+use geometry::Rect;
 pub mod rstar;
 pub mod r;
 
@@ -47,4 +48,11 @@ pub trait IndexRemove<P, DIM, LG, T, NODE, I>
          query: Q,
          mut f: F)
          -> RemoveReturn<P, DIM, LG, T, NODE>;
+}
+
+/// Generic trait for splitting an MbrNode
+pub trait MbrNodeSplit<P, DIM>
+    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
+{
+    fn split<V: MbrLeafGeometry<P, DIM>>(&self, min: usize, mbr: &mut Rect<P, DIM>, children: &mut Vec<V>) -> (Rect<P, DIM>, Vec<V>);
 }

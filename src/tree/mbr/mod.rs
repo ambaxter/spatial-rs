@@ -19,8 +19,8 @@ pub use tree::mbr::leafgeometry::MbrLeafGeometry;
 pub use tree::mbr::map::{Iter, IterMut, MbrMap};
 pub use tree::mbr::node::{MbrNode, RTreeNode};
 pub use tree::mbr::query::{MbrQuery, MbrRectQuery};
-use tree::mbr::index::IndexInsert;
-use tree::mbr::index::r::{RInsert, PickSeed, LinearPickSeed, QuadraticPickSeed, RRemove};
+use tree::mbr::index::{MbrNodeSplit, IndexInsert};
+use tree::mbr::index::r::{RInsert, SeedSplit, Linear, Quadratic, RRemove};
 use tree::mbr::index::rstar::RStarInsert;
 use generic_array::ArrayLength;
 use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
@@ -30,6 +30,8 @@ use std::marker::PhantomData;
 
 
 /// Convenience struct for creating a new R Tree
+/// 
+/// Agorithms described by Guttman, A. (1984). "R-Trees: A Dynamic Index Structure for Spatial Searching"
 pub struct RTree<P, DIM, LG, T> {
     _p: PhantomData<P>,
     _dim: PhantomData<DIM>,
@@ -37,16 +39,13 @@ pub struct RTree<P, DIM, LG, T> {
     _t: PhantomData<T>,
 }
 
-type RQuadraticInsert<P, DIM, LG, T> = RInsert<P, DIM, LG, T, QuadraticPickSeed>;
-type RLinearInsert<P, DIM, LG, T> = RInsert<P, DIM, LG, T, LinearPickSeed>;
-
 /// R Quadratic Tree Type
 pub type RQuadraticTree<P, DIM, LG, T> = MbrMap<RTreeNode<P, DIM, LG, T>,
-                                                RInsert<P, DIM, LG, T, QuadraticPickSeed>,
+                                                RInsert<P, DIM, LG, T, SeedSplit<P, DIM, LG, T, Quadratic>>,
                                                 RRemove<P, DIM, LG, T>>;
 /// R Quadratic Tree Type
 pub type RLinearTree<P, DIM, LG, T> = MbrMap<RTreeNode<P, DIM, LG, T>,
-                                             RInsert<P, DIM, LG, T, LinearPickSeed>,
+                                             RInsert<P, DIM, LG, T, SeedSplit<P, DIM, LG, T, Linear>>,
                                              RRemove<P, DIM, LG, T>>;
 
 impl<P, DIM, LG, T> RTree<P, DIM, LG, T>
@@ -57,27 +56,27 @@ impl<P, DIM, LG, T> RTree<P, DIM, LG, T>
 
     /// Create a new R Tree using the Linear splitting algorithm with min and max children lengths set to 19 and 64, respectively
     pub fn new_linear() -> RLinearTree<P, DIM, LG, T> {
-// TODO: This type specification shouldn't be needed?
-        RTree::map_from_insert(RLinearInsert::new(LinearPickSeed))
+// TODO: This type specification shouldn't be needed? Compliation error without them :/
+        RTree::map_from_insert(RInsert::<P, DIM, LG, T, SeedSplit<P, DIM, LG, T, Linear>>::new(SeedSplit::<P, DIM, LG, T, Linear>::linear()))
     }
 
     /// Create a new R Tree using the Linear splitting algorithm with max children lengths as provided. min length will be set to 0.3 * max
     pub fn new_linear_with_max(max: usize) -> RLinearTree<P, DIM, LG, T> {
-        RTree::map_from_insert(RLinearInsert::new_with_max(LinearPickSeed, max))
+        RTree::map_from_insert(RInsert::<P, DIM, LG, T, SeedSplit<P, DIM, LG, T, Linear>>::new_with_max(SeedSplit::<P, DIM, LG, T, Linear>::linear(), max))
     }
 
      /// Create a new R Tree using the Quadratic splitting algorithm with min and max children lengths set to 19 and 64, respectively
     pub fn new_quadratic() -> RQuadraticTree<P, DIM, LG, T> {
-        RTree::map_from_insert(RQuadraticInsert::new(QuadraticPickSeed))
+        RTree::map_from_insert(RInsert::<P, DIM, LG, T, SeedSplit<P, DIM, LG, T, Quadratic>>::new(SeedSplit::<P, DIM, LG, T, Quadratic>::quadratic()))
     }
 
     /// Create a new R Tree using the Quadratic splitting algorithm with max children lengths as provided. min length will be set to 0.3 * max
     pub fn new_quadratic_with_max(max: usize) -> RQuadraticTree<P, DIM, LG, T> {
-        RTree::map_from_insert(RQuadraticInsert::new_with_max(QuadraticPickSeed, max))
+        RTree::map_from_insert(RInsert::<P, DIM, LG, T, SeedSplit<P, DIM, LG, T, Quadratic>>::new_with_max(SeedSplit::<P, DIM, LG, T, Quadratic>::quadratic(), max))
     }
 
-    fn map_from_insert<PS: PickSeed<P, DIM, LG, T>>(insert: RInsert<P, DIM, LG, T, PS>) -> MbrMap<RTreeNode<P, DIM, LG, T>,
-                                                                                                  RInsert<P, DIM, LG, T, PS>,
+    fn map_from_insert<S: MbrNodeSplit<P, DIM>>(insert: RInsert<P, DIM, LG, T, S>) -> MbrMap<RTreeNode<P, DIM, LG, T>,
+                                                                                                  RInsert<P, DIM, LG, T, S>,
                                                                                                   RRemove<P, DIM, LG, T>> {
         let min = insert.preferred_min();
         MbrMap::new(insert, RRemove::with_min(min))
@@ -90,6 +89,8 @@ pub type RStarTree<P, DIM, LG, T> = MbrMap<RTreeNode<P, DIM, LG, T>,
                                            RRemove<P, DIM, LG, T>>;
 
 /// Convenience struct for creating a new R* Tree
+///
+/// Algorithms descibed by Beckmann, N.; Kriegel, H. P.; Schneider, R.; Seeger, B. (1990). "The R*-tree: an efficient and robust access method for points and rectangles". 
 pub struct RStar<P, DIM, LG, T> {
     _p: PhantomData<P>,
     _dim: PhantomData<DIM>,
