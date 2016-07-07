@@ -54,5 +54,9 @@ pub trait IndexRemove<P, DIM, LG, T, NODE, I>
 pub trait MbrNodeSplit<P, DIM>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {
-    fn split<V: MbrLeafGeometry<P, DIM>>(&self, min: usize, mbr: &mut Rect<P, DIM>, children: &mut Vec<V>) -> (Rect<P, DIM>, Vec<V>);
+    fn split<V: MbrLeafGeometry<P, DIM>>(&self,
+                                         min: usize,
+                                         mbr: &mut Rect<P, DIM>,
+                                         children: &mut Vec<V>)
+                                         -> (Rect<P, DIM>, Vec<V>);
 }
