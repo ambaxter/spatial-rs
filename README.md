@@ -12,7 +12,6 @@ The march to 0.2.0:
 - [x] Bug-fix: iter_mut and query_mut should take &mut self to provide Isolation guarantees
 - [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
 - [x] R-Tree: implement, document, test, and benchmark
-- [ ] X-Tree: implement, document, test, and benchmark
 - [x] Pull out XMbrNode and MbrNode as a trait. Modify everything to use that trait 
 - [x] Performance improvement: Remove UnpackRwLocks and PackRwLocks requirement
 - [ ] Examples in documentation, README.md
@@ -33,8 +32,11 @@ The march to 0.2.0:
 0.4.0:
 - [ ] Inevitable bug fixes
 - [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
-- [ ] Performance improvement: remove recursion - add another unsafe area :/
+- [ ] X-Tree: implement, document, test, and benchmark (moved to give me time to work on generic-bitset)
+- [ ] Performance improvement: Able to re-insert nodes as well, as opposed to just leaves. Remove the need for consume_leaves_for_reinsert
+- [ ] Performance improvement: Remove recursion - add another unsafe area :/
 - [ ] Performance improvement: Tune children size based off memory block size
+- [ ] Performance improvement: Child max/min length different for Level and Leaves  
 - [ ] Performance improvement: Use lifeguard with MbrNode
 - [ ] Auto-guess performance variables?
 - [ ] ???

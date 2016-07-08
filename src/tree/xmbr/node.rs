@@ -20,13 +20,15 @@ pub enum XTreeNode<P, DIM, LG, T>
     /// Contains only other levels
     Level {
         mbr: Rect<P, DIM>,
-        super_node: bool,
+        // TODO: Replace with bitset
+        split_dim: usize,
+        super_node_size: Option<usize>,
         children: Vec<XTreeNode<P, DIM, LG, T>>,
     },
     /// Contains only leaves
     Leaves {
         mbr: Rect<P, DIM>,
-        super_node: bool,
+        super_node_size: Option<usize>,
         children: Vec<MbrLeaf<P, DIM, LG, T>>,
     },
 }
@@ -38,8 +40,8 @@ impl<P, DIM, LG, T> XTreeNode<P, DIM, LG, T>
 {
     pub fn is_super(&self) -> bool {
         match *self {
-            XTreeNode::Level{super_node, ..} => super_node,
-            XTreeNode::Leaves{super_node, ..} => super_node,
+            XTreeNode::Level{super_node_size, ..} => super_node_size.is_some(),
+            XTreeNode::Leaves{super_node_size, ..} => super_node_size.is_some(),
         }
     }
 }
@@ -50,11 +52,11 @@ impl<P, DIM, LG, T> MbrNode<P, DIM> for XTreeNode<P, DIM, LG, T>
           LG: MbrLeafGeometry<P, DIM> {
 
     fn new_leaves() -> XTreeNode<P, DIM, LG, T> {
-        XTreeNode::Leaves{mbr: Rect::max_inverted(), super_node: false, children: Vec::new()}
+        XTreeNode::Leaves{mbr: Rect::max_inverted(), super_node_size: None, children: Vec::new()}
     }
 
     fn new_no_alloc() -> XTreeNode<P, DIM, LG, T> {
-        XTreeNode::Leaves{mbr: Rect::max_inverted(), super_node: false, children: Vec::with_capacity(0)}
+        XTreeNode::Leaves{mbr: Rect::max_inverted(), super_node_size: None, children: Vec::with_capacity(0)}
     }
 
     fn has_leaves(&self) -> bool {
