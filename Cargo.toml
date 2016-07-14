@@ -1,6 +1,6 @@
 [package]
 name = "spatial"
-version = "0.2"
+version = "0.2.0"
 authors = ["Adam Baxter"]
 description = "An N-Dimensional R-tree family spatial tree implementations"
 repository = "https://github.com/ambaxter/spatial-rs.git"

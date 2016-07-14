@@ -46,11 +46,9 @@ impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for Quadratic
         LG: MbrLeafGeometry<P, DIM>,
 {
     fn pick_seed<V: MbrLeafGeometry<P, DIM>>(&self, mbr: &Rect<P, DIM>, children: &Vec<V>) -> (usize, usize) {
-        let (_, k, l) = (0..children.len()).combinations()
+        let (_, k, l) = children.iter().enumerate().combinations()
 // PS1
-            .map(|(k, l)| {
-// We're safe here because we're already limiting ourselves to len
-                let (k_child, l_child) = unsafe {(children.get_unchecked(k), children.get_unchecked(l) )};
+            .map(|((k, k_child), (l, l_child))| {
                 let mut mbr = Rect::max_inverted();
                 k_child.expand_mbr_to_fit(&mut mbr);
                 l_child.expand_mbr_to_fit(&mut mbr);

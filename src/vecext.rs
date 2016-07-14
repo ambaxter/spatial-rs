@@ -100,7 +100,7 @@ impl<T, F> RetainAndAppend<T, F> for Vec<T>
     fn retain_and_append(&mut self, m: &mut Vec<T>, mut f: F) {
         let del = self.retain_part(f);
         if del > 0 {
-            for i in 0..del {
+            for _ in 0..del {
                 m.push(self.pop().unwrap());
             }
         }
