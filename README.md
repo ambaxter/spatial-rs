@@ -3,7 +3,7 @@ N-Dimensional Spatial Tree implementations library for Rust
 
 Currently only implements R* Tree, but I'm trying to keep it generic enough where most spatial trees can be supported in a single interface.
 
-[Documentation](https://ambaxter.github.io/spatial/doc/spatial/index.html)
+[Documentation](https://ambaxter.github.io/spatial/doc/spatial)
 
 # Roadmap
 
@@ -22,6 +22,8 @@ The march to 0.2.0:
 0.3.0:
 - [ ] Inevitable bug fixes
 - [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
+- [ ] X-Tree: implement, document, test, and benchmark (moved to give me time to work on generic-bitset)
+- [ ] Optional bindings to rust-geo
 - [ ] Move the tree iterator code into macros?
 - [ ] Macro so users can create their own Shapes enum?
 - [ ] Example application - SLD2 application - insert point at mouse click to visualize the tree
@@ -32,7 +34,6 @@ The march to 0.2.0:
 0.4.0:
 - [ ] Inevitable bug fixes
 - [ ] No public library interface changes (pub fn and type names only) unless bug fixes demand it
-- [ ] X-Tree: implement, document, test, and benchmark (moved to give me time to work on generic-bitset)
 - [ ] Performance improvement: Able to re-insert nodes as well, as opposed to just leaves. Remove the need for consume_leaves_for_reinsert
 - [ ] Performance improvement: Remove recursion - add another unsafe area :/
 - [ ] Performance improvement: Tune children size based off memory block size
