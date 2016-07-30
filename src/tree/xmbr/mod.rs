@@ -5,23 +5,7 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-//! Spatial Trees
+mod index;
+mod node;
 
-#[macro_use]
-extern crate itertools;
-#[macro_use]
-extern crate generic_array;
-
-extern crate ordered_float;
-extern crate num;
-extern crate typenum;
-
-#[cfg(test)]
-#[macro_use]
-extern crate approx;
-
-pub mod geometry;
-pub mod tree;
-mod vecext;
-
-pub use tree::mbr::{RTree, RQuadraticTree, RLinearTree, RStar, RStarTree};
+pub use tree::xmbr::node::XTreeNode;

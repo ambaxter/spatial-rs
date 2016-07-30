@@ -14,7 +14,7 @@ use generic_array::ArrayLength;
 use std::marker::PhantomData;
 
 /// A tree leaf
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MbrLeaf<P, DIM, LG, T>
     where DIM: ArrayLength<P> + ArrayLength<(P, P)>
 {

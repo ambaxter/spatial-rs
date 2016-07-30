@@ -77,43 +77,43 @@ fn remove_rng_bench_3d(b: &mut Bencher, size: usize) {
 }
 
 #[bench]
-fn search_bench_3d_10(b: &mut Bencher) {
+fn search_rng_bench_3d_10(b: &mut Bencher) {
     search_rng_bench_3d(b, 10);
 
 }
 
 #[bench]
-fn search_bench_3d_100(b: &mut Bencher) {
+fn search_rng_bench_3d_100(b: &mut Bencher) {
     search_rng_bench_3d(b, 100);
 }
 
 #[bench]
-fn search_bench_3d_1000(b: &mut Bencher) {
+fn search_rng_bench_3d_1000(b: &mut Bencher) {
     search_rng_bench_3d(b, 1000);
 }
 
 #[bench]
-fn search_bench_3d_10000(b: &mut Bencher) {
+fn search_rng_bench_3d_10000(b: &mut Bencher) {
     search_rng_bench_3d(b, 10000);
 }
 
 #[bench]
-fn remove_bench_3d_10(b: &mut Bencher) {
+fn remove_rng_bench_3d_10(b: &mut Bencher) {
     remove_rng_bench_3d(b, 10);
 
 }
 
 #[bench]
-fn remove_bench_3d_100(b: &mut Bencher) {
+fn remove_rng_bench_3d_100(b: &mut Bencher) {
     remove_rng_bench_3d(b, 100);
 }
 
 #[bench]
-fn remove_bench_3d_1000(b: &mut Bencher) {
+fn remove_rng_bench_3d_1000(b: &mut Bencher) {
     remove_rng_bench_3d(b, 1000);
 }
 
 #[bench]
-fn remove_bench_3d_10000(b: &mut Bencher) {
+fn remove_rng_bench_3d_10000(b: &mut Bencher) {
     remove_rng_bench_3d(b, 10000);
 }

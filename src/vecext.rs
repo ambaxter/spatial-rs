@@ -7,8 +7,6 @@
 
 //! Various Vec Extensions
 
-use parking_lot::RwLock;
-
 trait RetainPart<T, F>
     where F: FnMut(&T) -> bool
 {
@@ -102,7 +100,7 @@ impl<T, F> RetainAndAppend<T, F> for Vec<T>
     fn retain_and_append(&mut self, m: &mut Vec<T>, mut f: F) {
         let del = self.retain_part(f);
         if del > 0 {
-            for i in 0..del {
+            for _ in 0..del {
                 m.push(self.pop().unwrap());
             }
         }
@@ -119,30 +117,6 @@ impl<T, F> RetainMut<T, F> for Vec<T>
         if del > 0 {
             self.truncate(len - del);
         }
-    }
-}
-
-pub trait UnpackRwLocks<T> {
-    fn unpack_rwlocks(self) -> Vec<T>;
-}
-
-impl<T> UnpackRwLocks<T> for Vec<RwLock<T>> {
-    fn unpack_rwlocks(self) -> Vec<T> {
-        self.into_iter()
-            .map(|item| item.into_inner())
-            .collect()
-    }
-}
-
-pub trait PackRwLocks<T> {
-    fn pack_rwlocks(self) -> Vec<RwLock<T>>;
-}
-
-impl<T> PackRwLocks<T> for Vec<T> {
-    fn pack_rwlocks(self) -> Vec<RwLock<T>> {
-        self.into_iter()
-            .map(RwLock::new)
-            .collect()
     }
 }
 
