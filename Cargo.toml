@@ -1,6 +1,6 @@
 [package]
 name = "spatial"
-version = "0.2.0-rc1"
+version = "0.2.0-rc2"
 authors = ["Adam Baxter"]
 description = "An N-Dimensional R-tree family spatial tree implementations"
 repository = "https://github.com/ambaxter/spatial-rs.git"
@@ -12,7 +12,7 @@ keywords = ["spatial","geometry","tree","r-tree","rstar"]
 
 
 [dependencies]
-itertools = "0.4"
+itertools = "0.5"
 ordered-float = "0.2"
 num = "0.1"
 generic-array = "0.3"
