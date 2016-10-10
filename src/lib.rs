@@ -16,6 +16,9 @@ extern crate ordered_float;
 extern crate num;
 extern crate typenum;
 
+#[cfg(feature="geo")]
+extern crate geo;
+
 #[cfg(test)]
 #[macro_use]
 extern crate approx;

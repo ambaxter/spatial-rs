@@ -45,6 +45,7 @@ impl<P, DIM, LG, T> PickSeed<P, DIM, LG, T> for Quadratic
         DIM: ArrayLength<P> + ArrayLength<(P, P)> + Clone,
         LG: MbrLeafGeometry<P, DIM>,
 {
+    #[allow(unused_variables)]
     fn pick_seed<V: MbrLeafGeometry<P, DIM>>(&self, mbr: &Rect<P, DIM>, children: &Vec<V>) -> (usize, usize) {
         let (_, k, l) = children.iter().enumerate().tuple_combinations()
 // PS1

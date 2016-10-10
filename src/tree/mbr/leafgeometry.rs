@@ -12,6 +12,9 @@ use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 use generic_array::ArrayLength;
 
+#[cfg(feature="geo")]
+pub use self::rustgeo::*;
+
 /// The minimum functionality required to insert leaf geometry into `MbrMap`
 /// Until the rust compiler allows compile-time generic integers, we'll be using generic_array's `ArrayLength` to specify
 /// geometry dimensions at compile time.
@@ -465,4 +468,280 @@ mod tests {
         assert_relative_eq!(1.0f64, zero_one.area_overlapped_with_mbr(&bounding_mbr));
         assert_relative_eq!(1.0f64, neg_one_one.area_overlapped_with_mbr(&bounding_mbr));
     }
+}
+
+#[cfg(feature="geo")]
+mod rustgeo {
+    use num::{Zero, One, Signed, Float, Bounded, ToPrimitive, FromPrimitive, pow};
+    use std::ops::{MulAssign, AddAssign};
+    use geometry::{Rect};
+    use std::fmt::Debug;
+    use tree::mbr::MbrLeafGeometry;
+    use typenum::{Unsigned, U2};
+    use geo::{Point as GeoPoint, Polygon as GeoPolygon, LineString as GeoLineString};
+    use geo::boundingbox::BoundingBox;
+    use geo::area::Area;
+    use geo::centroid::Centroid;
+
+    impl<P> MbrLeafGeometry<P, U2> for GeoPoint<P>
+        where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug
+    {
+        fn dim(&self) -> usize {
+            U2::to_usize()
+        }
+
+        fn area(&self) -> P {
+            Zero::zero()
+        }
+
+        fn min_for_axis(&self, dim: usize) -> P {
+            match dim {
+                0 => self.x(),
+                1 => self.y(),
+                _ => unreachable!("Dim larger than 1")
+            }
+        }
+
+        fn max_for_axis(&self, dim: usize) -> P {
+            match dim {
+                0 => self.x(),
+                1 => self.y(),
+                _ => unreachable!("Dim larger than 1")
+            }
+        }
+
+        fn expand_mbr_to_fit(&self, mbr: &mut Rect<P, U2>) {
+            {
+                let &mut(ref mut x1, ref mut y1) = mbr.edges.get_mut(0).unwrap();
+                *x1 = x1.min(self.x());
+                *y1 = y1.max(self.x());
+            }
+            {
+                let &mut(ref mut x2, ref mut y2) = mbr.edges.get_mut(1).unwrap();
+                *x2 = x2.min(self.y());
+                *y2 = y2.max(self.y());
+            }
+        }
+
+        fn distance_from_mbr_center(&self, mbr: &Rect<P, U2>) -> P {
+            let two = FromPrimitive::from_usize(2).unwrap();
+            let &(x1, y1) = mbr.edges.get(0).unwrap();
+            let &(x2, y2) = mbr.edges.get(1).unwrap();
+            let mut distance: P = Zero::zero();
+            distance += pow((((x1 + y1)/two) - self.x()), 2);
+            distance += pow((((x2 + y2)/two) - self.y()), 2);
+            distance.sqrt()
+        }
+
+        fn contained_by_mbr(&self, mbr: &Rect<P, U2>) -> bool {
+            self.overlapped_by_mbr(mbr)
+        }
+
+        fn overlapped_by_mbr(&self, mbr: &Rect<P, U2>) -> bool {
+            let &(x1, y1) = mbr.edges.get(0).unwrap();
+            if self.x() < x1 ||  y1 < self.x() {
+                return false;
+            }
+            let &(x2, y2) = mbr.edges.get(1).unwrap();
+            if self.y() < x2 ||  y2 < self.y() {
+                return false;
+            }
+            true
+        }
+
+        #[allow(unused_variables)]
+        fn area_overlapped_with_mbr(&self, mbr: &Rect<P, U2>) -> P {
+            Zero::zero()
+        }
+    }
+
+    impl<P> MbrLeafGeometry<P, U2> for GeoLineString<P>
+        where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug
+    {
+        fn dim(&self) -> usize {
+            U2::to_usize()
+        }
+
+        fn area(&self) -> P {
+            Zero::zero()
+        }
+
+        fn min_for_axis(&self, dim: usize) -> P {
+            let bbox = self.bbox().unwrap();
+            match dim {
+                0 => bbox.xmin,
+                1 => bbox.ymin,
+                _ => unreachable!("Dim larger than 1")
+            }
+        }
+
+        fn max_for_axis(&self, dim: usize) -> P {
+            let bbox = self.bbox().unwrap();
+            match dim {
+                0 => bbox.xmax,
+                1 => bbox.ymax,
+                _ => unreachable!("Dim larger than 1")
+            }
+        }
+
+        fn expand_mbr_to_fit(&self, mbr: &mut Rect<P, U2>) {
+            let bbox = self.bbox().unwrap();
+            {
+                let &mut(ref mut x1, ref mut y1) = mbr.edges.get_mut(0).unwrap();
+                *x1 = x1.min(bbox.xmin);
+                *y1 = y1.max(bbox.xmax);
+            }
+            {
+                let &mut(ref mut x2, ref mut y2) = mbr.edges.get_mut(1).unwrap();
+                *x2 = x2.min(bbox.ymin);
+                *y2 = y2.max(bbox.ymax);
+            }
+        }
+
+        fn distance_from_mbr_center(&self, mbr: &Rect<P, U2>) -> P {
+            let two = FromPrimitive::from_usize(2).unwrap();
+            let centroid = self.centroid().unwrap();
+            let &(x1, y1) = mbr.edges.get(0).unwrap();
+            let &(x2, y2) = mbr.edges.get(1).unwrap();
+            let mut distance: P = Zero::zero();
+            distance += pow((((x1 + y1)/two) - centroid.x()), 2);
+            distance += pow((((x2 + y2)/two) - centroid.y()), 2);
+            distance.sqrt()
+        }
+
+        fn contained_by_mbr(&self, mbr: &Rect<P, U2>) -> bool {
+            let &(x1, y1) = mbr.edges.get(0).unwrap();
+            let &(x2, y2) = mbr.edges.get(1).unwrap();
+            let &GeoLineString(ref points) = self;
+            for point in points {
+                if point.x() < x1 ||  y1 < point.x() {
+                    return false;
+                }
+                if point.y() < x2 ||  y2 < point.y() {
+                    return false;
+                }
+            }
+            true
+        }
+
+        fn overlapped_by_mbr(&self, mbr: &Rect<P, U2>) -> bool {
+            let &(x1, y1) = mbr.edges.get(0).unwrap();
+            let &(x2, y2) = mbr.edges.get(1).unwrap();
+            let &GeoLineString(ref points) = self;
+            for point in points {
+                if point.x() < x1 ||  y1 < point.x() {
+                    continue;
+                }
+                if point.y() < x2 ||  y2 < point.y() {
+                    continue;
+                }
+                return true;
+            }
+            false
+        }
+
+        #[allow(unused_variables)]
+        fn area_overlapped_with_mbr(&self, mbr: &Rect<P, U2>) -> P {
+            Zero::zero()
+        }
+    }
+
+    impl<P> MbrLeafGeometry<P, U2> for GeoPolygon<P>
+        where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug
+    {
+        fn dim(&self) -> usize {
+            U2::to_usize()
+        }
+
+        fn area(&self) -> P {
+            Area::area(self)
+        }
+
+        fn min_for_axis(&self, dim: usize) -> P {
+            let bbox = self.bbox().unwrap();
+            match dim {
+                0 => bbox.xmin,
+                1 => bbox.ymin,
+                _ => unreachable!("Dim larger than 1")
+            }
+        }
+
+        fn max_for_axis(&self, dim: usize) -> P {
+            let bbox = self.bbox().unwrap();
+            match dim {
+                0 => bbox.xmax,
+                1 => bbox.ymax,
+                _ => unreachable!("Dim larger than 1")
+            }
+        }
+
+        fn expand_mbr_to_fit(&self, mbr: &mut Rect<P, U2>) {
+            let bbox = self.bbox().unwrap();
+            {
+                let &mut(ref mut x1, ref mut y1) = mbr.edges.get_mut(0).unwrap();
+                *x1 = x1.min(bbox.xmin);
+                *y1 = y1.max(bbox.xmax);
+            }
+            {
+                let &mut(ref mut x2, ref mut y2) = mbr.edges.get_mut(1).unwrap();
+                *x2 = x2.min(bbox.ymin);
+                *y2 = y2.max(bbox.ymax);
+            }
+        }
+
+        fn distance_from_mbr_center(&self, mbr: &Rect<P, U2>) -> P {
+            let two = FromPrimitive::from_usize(2).unwrap();
+            let centroid = self.centroid().unwrap();
+            let &(x1, y1) = mbr.edges.get(0).unwrap();
+            let &(x2, y2) = mbr.edges.get(1).unwrap();
+            let mut distance: P = Zero::zero();
+            distance += pow((((x1 + y1)/two) - centroid.x()), 2);
+            distance += pow((((x2 + y2)/two) - centroid.y()), 2);
+            distance.sqrt()
+        }
+
+        fn contained_by_mbr(&self, mbr: &Rect<P, U2>) -> bool {
+            let &(x1, y1) = mbr.edges.get(0).unwrap();
+            let &(x2, y2) = mbr.edges.get(1).unwrap();
+            let &GeoPolygon(GeoLineString(ref points), _) = self;
+            for point in points {
+                if point.x() < x1 ||  y1 < point.x() {
+                    return false;
+                }
+                if point.y() < x2 ||  y2 < point.y() {
+                    return false;
+                }
+            }
+            true
+        }
+
+        fn overlapped_by_mbr(&self, mbr: &Rect<P, U2>) -> bool {
+            let &(x1, y1) = mbr.edges.get(0).unwrap();
+            let &(x2, y2) = mbr.edges.get(1).unwrap();
+            let &GeoPolygon(GeoLineString(ref points), _) = self;
+            for point in points {
+                if point.x() < x1 ||  y1 < point.x() {
+                    continue;
+                }
+                if point.y() < x2 ||  y2 < point.y() {
+                    continue;
+                }
+                return true;
+            }
+            false
+        }
+
+        #[allow(unused_variables)]
+        //TODO: This is extremely naive. Need to find out the guarantees rust-geo provides for Polygons
+        fn area_overlapped_with_mbr(&self, mbr: &Rect<P, U2>) -> P {
+            let bbox = self.bbox().unwrap();
+            let &(x1, y1) = mbr.edges.get(0).unwrap();
+            let &(x2, y2) = mbr.edges.get(1).unwrap();
+            let mut area: P = One::one();
+            area *= (y1.min(bbox.xmax) - x1.max(bbox.xmin)).max(Zero::zero());
+            area *= (y2.min(bbox.ymax) - x2.max(bbox.ymin)).max(Zero::zero());
+            area
+        }
+    }
+
 }

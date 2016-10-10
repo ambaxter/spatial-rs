@@ -6,8 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
+- Added rust-geo dependency and leafgeometry calculations
 
 ### Changed
+
+### Fixed
 
 ## [0.2.0-rc2] - 2016-09-27
 ### Changed
@@ -21,7 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Removed parking_lot dependency
 
 ### Fixed 
-- iter\_mut and query\_mut not take `&mut self` to provide isolation guarantees
+- iter\_mut and query\_mut now take `&mut self` to provide isolation guarantees
 
 ## [0.1.1] - 2016-07-07
 ### Fixed
