@@ -9,19 +9,37 @@
 
 #[macro_use]
 extern crate itertools;
-#[macro_use]
-extern crate generic_array;
 
-extern crate ordered_float;
 extern crate num;
-extern crate typenum;
+extern crate ordered_float;
 
 #[cfg(test)]
 #[macro_use]
 extern crate approx;
 
+pub trait FP:
+    Float
+    + Signed
+    + Bounded
+    + MulAssign
+    + AddAssign
+    + ToPrimitive
+    + FromPrimitive
+    + Copy
+    + Debug
+    + Default
+{
+}
+
+impl FP for f32 {}
+impl FP for f64 {}
+
 pub mod geometry;
 pub mod tree;
 mod vecext;
 
-pub use tree::mbr::{RTree, RQuadraticTree, RLinearTree, RStar, RStarTree};
+use num::{Bounded, Float, FromPrimitive, Signed, ToPrimitive};
+use ordered_float::FloatCore;
+use std::fmt::Debug;
+use std::ops::{AddAssign, MulAssign};
+pub use tree::mbr::{RLinearTree, RQuadraticTree, RStar, RStarTree, RTree};

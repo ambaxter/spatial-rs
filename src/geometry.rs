@@ -7,41 +7,33 @@
 
 //! Various geometric shapes to insert into spatial trees
 
-use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
-use std::ops::{MulAssign, AddAssign};
+use num::Bounded;
+use std::convert::{AsMut, AsRef};
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
-use std::convert::{AsRef, AsMut};
-use generic_array::{ArrayLength, GenericArray};
+use FP;
 
 /// An n-dimensional point
 #[derive(Debug, Clone)]
-pub struct Point<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
-    pub coords: GenericArray<P, DIM>,
+pub struct Point<P, const DIM: usize> {
+    pub coords: [P; DIM],
 }
 
-impl<P, DIM> Point<P, DIM>
-    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
-    DIM: ArrayLength<P> + ArrayLength<(P,P)>
-{
-/// New Point from a `GenericArray`
-    pub fn new(coords: GenericArray<P, DIM>) -> Point<P, DIM> {
+impl<P: FP, const DIM: usize> Point<P, DIM> {
+    /// New Point from a `GenericArray`
+    pub fn new(coords: [P; DIM]) -> Point<P, DIM> {
         for coord in coords.deref() {
             assert!(coord.is_finite(), "{:?} should be finite", coord);
         }
-        Point{coords: coords}
+        Point { coords }
     }
-/// New Point from a slice
+    /// New Point from a slice
     pub fn from_slice(slice: &[P]) -> Point<P, DIM> {
-        Point::new(GenericArray::from_slice(slice))
+        Point::new(slice.into())
     }
 }
 
-impl<P, DIM> Deref for Point<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
+impl<P: FP, const DIM: usize> Deref for Point<P, DIM> {
     type Target = [P];
 
     fn deref(&self) -> &[P] {
@@ -49,25 +41,19 @@ impl<P, DIM> Deref for Point<P, DIM>
     }
 }
 
-impl<P, DIM> DerefMut for Point<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
+impl<P: FP, const DIM: usize> DerefMut for Point<P, DIM> {
     fn deref_mut(&mut self) -> &mut [P] {
         self.coords.deref_mut()
     }
 }
 
-impl<P, DIM> AsRef<[P]> for Point<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
+impl<P: FP, const DIM: usize> AsRef<[P]> for Point<P, DIM> {
     fn as_ref(&self) -> &[P] {
         self.deref()
     }
 }
 
-impl<P, DIM> AsMut<[P]> for Point<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
+impl<P: FP, const DIM: usize> AsMut<[P]> for Point<P, DIM> {
     fn as_mut(&mut self) -> &mut [P] {
         self.deref_mut()
     }
@@ -75,54 +61,50 @@ impl<P, DIM> AsMut<[P]> for Point<P, DIM>
 
 /// An n-dimensional line segment
 #[derive(Debug, Clone)]
-pub struct LineSegment<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
+pub struct LineSegment<P: FP, const DIM: usize> {
     // TODO: Would this be better as [(P,P)]?
     pub x: Point<P, DIM>,
     pub y: Point<P, DIM>,
 }
 
-impl<P, DIM> LineSegment<P, DIM>
-    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
-    DIM: ArrayLength<P> + ArrayLength<(P,P)> {
-
-/// New LineSegment from two GenericArrays representing either end
-    pub fn new(x: GenericArray<P, DIM>, y: GenericArray<P, DIM>) -> LineSegment<P, DIM> {
-        LineSegment{x: Point::new(x), y: Point::new(y)}
+impl<P: FP, const DIM: usize> LineSegment<P, DIM> {
+    /// New LineSegment from two GenericArrays representing either end
+    pub fn new(x: [P; DIM], y: [P; DIM]) -> LineSegment<P, DIM> {
+        LineSegment {
+            x: Point::new(x),
+            y: Point::new(y),
+        }
     }
-/// New LineSegment from two slices representing either end
+    /// New LineSegment from two slices representing either end
     pub fn from_slices(x: &[P], y: &[P]) -> LineSegment<P, DIM> {
-        LineSegment{x: Point::from_slice(x), y: Point::from_slice(y)}
+        LineSegment {
+            x: Point::from_slice(x),
+            y: Point::from_slice(y),
+        }
     }
 }
 
 /// An n-dimensional rectangle
 #[derive(Debug, Clone)]
-pub struct Rect<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
-    pub edges: GenericArray<(P, P), DIM>,
+pub struct Rect<P: FP, const DIM: usize> {
+    pub edges: [(P, P); DIM],
 }
 
-impl<P, DIM> Rect<P, DIM>
-    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
-    DIM: ArrayLength<P> + ArrayLength<(P,P)> {
-
-/// New Rect from a `GenericArray`
-    pub fn new(mut edges: GenericArray<(P,P), DIM>) -> Rect<P,DIM> {
-// ensure that the edge coordinates are valid and ordered correctly
+impl<P: FP, const DIM: usize> Rect<P, DIM> {
+    /// New Rect from a `GenericArray`
+    pub fn new(mut edges: [(P, P); DIM]) -> Rect<P, DIM> {
+        // ensure that the edge coordinates are valid and ordered correctly
         for &mut (ref mut x, ref mut y) in edges.deref_mut() {
             assert!(x.is_finite(), "{:?} should be finite", x);
             assert!(y.is_finite(), "{:?} should be finite", y);
             *x = x.min(*y);
             *y = x.max(*y);
         }
-        Rect{edges: edges}
+        Rect { edges: edges }
     }
 
-/// New Rect from corners
-    pub fn from_corners(x: GenericArray<P, DIM>, y: GenericArray<P, DIM>) -> Rect<P, DIM>{
+    /// New Rect from corners
+    pub fn from_corners(x: [P; DIM], y: [P; DIM]) -> Rect<P, DIM> {
         use tree::mbr::MbrLeafGeometry;
         let mut edges = Rect::max_inverted();
         Point::new(x).expand_mbr_to_fit(&mut edges);
@@ -130,30 +112,28 @@ impl<P, DIM> Rect<P, DIM>
         edges
     }
 
-/// An inverted Rect where ever dimension's (x, y) coordinates are (MAX, MIN). Simplifies finding boundaries.
+    /// An inverted Rect where ever dimension's (x, y) coordinates are (MAX, MIN). Simplifies finding boundaries.
     pub fn max_inverted() -> Rect<P, DIM> {
-        let mut edges = GenericArray::new();
+        let mut edges = [P::default(); DIM];
         for &mut (ref mut x, ref mut y) in edges.as_mut() {
             *x = Bounded::max_value();
             *y = Bounded::min_value();
         }
-        Rect{edges: edges}
+        Rect { edges }
     }
 
-/// The largest possible rect
+    /// The largest possible rect
     pub fn max() -> Rect<P, DIM> {
-        let mut edges = GenericArray::new();
+        let mut edges = [P::default(); DIM];
         for &mut (ref mut x, ref mut y) in edges.as_mut() {
             *x = Bounded::min_value();
             *y = Bounded::max_value();
         }
-        Rect{edges: edges}
+        Rect { edges }
     }
 }
 
-impl<P, DIM> Deref for Rect<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
+impl<P: FP, const DIM: usize> Deref for Rect<P, DIM> {
     type Target = [(P, P)];
 
     fn deref(&self) -> &[(P, P)] {
@@ -161,25 +141,19 @@ impl<P, DIM> Deref for Rect<P, DIM>
     }
 }
 
-impl<P, DIM> DerefMut for Rect<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
+impl<P: FP, const DIM: usize> DerefMut for Rect<P, DIM> {
     fn deref_mut(&mut self) -> &mut [(P, P)] {
         self.edges.deref_mut()
     }
 }
 
-impl<P, DIM> AsRef<[(P, P)]> for Rect<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
+impl<P: FP, const DIM: usize> AsRef<[(P, P)]> for Rect<P, DIM> {
     fn as_ref(&self) -> &[(P, P)] {
         self.deref()
     }
 }
 
-impl<P, DIM> AsMut<[(P, P)]> for Rect<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
+impl<P: FP, const DIM: usize> AsMut<[(P, P)]> for Rect<P, DIM> {
     fn as_mut(&mut self) -> &mut [(P, P)] {
         self.deref_mut()
     }
@@ -192,9 +166,7 @@ impl<P, DIM> AsMut<[(P, P)]> for Rect<P, DIM>
 //
 /// A convenience enum that contains `Point`, `LineSegment`, and `Rect`
 #[derive(Debug, Clone)]
-pub enum Shapes<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
+pub enum Shapes<P: FP, const DIM: usize> {
     Point(Point<P, DIM>),
     LineSegment(LineSegment<P, DIM>),
     Rect(Rect<P, DIM>), // Other(Box<Shape<P>>)

@@ -1,11 +1,11 @@
 #[macro_use]
 extern crate generic_array;
-extern crate typenum;
 extern crate spatial;
+extern crate typenum;
 
 use spatial::geometry::{Point, Rect};
-use spatial::RStar;
 use spatial::tree::mbr::MbrRectQuery;
+use spatial::RStar;
 
 #[test]
 fn rstar_integration() {
@@ -20,7 +20,10 @@ fn rstar_integration() {
     assert_eq!(tree_map.len(), tree_map.iter_mut().count());
 
     println!("Remove query");
-    let removed = tree_map.remove(MbrRectQuery::ContainedBy(Rect::from_corners(arr![f32; 0.0f32, 0.0f32, 0.0f32], arr![f32; 9.0f32, 9.0f32, 9.0f32])));
+    let removed = tree_map.remove(MbrRectQuery::ContainedBy(Rect::from_corners(
+        arr![f32; 0.0f32, 0.0f32, 0.0f32],
+        arr![f32; 9.0f32, 9.0f32, 9.0f32],
+    )));
     assert_eq!(10, removed.len());
     assert_eq!(22, tree_map.len());
     assert_eq!(tree_map.len(), tree_map.iter().count());

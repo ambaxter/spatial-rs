@@ -7,11 +7,11 @@
 
 //! Specific implementations for inserting and removing leaves
 
-use generic_array::ArrayLength;
-use tree::mbr::{MbrNode, MbrLeaf, MbrQuery, MbrLeafGeometry};
 use geometry::Rect;
-pub mod rstar;
+use tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode, MbrQuery};
+use FP;
 pub mod r;
+pub mod rstar;
 
 pub const D_MAX: usize = 64;
 const AT_ROOT: bool = true;
@@ -20,11 +20,11 @@ const FORCE_SPLIT: bool = true;
 const DONT_FORCE_SPLIT: bool = false;
 
 /// Insert the leaf into the root
-pub trait IndexInsert<P, DIM, LG, T, NODE>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
-          NODE: MbrNode<P, DIM>
+pub trait IndexInsert<P: FP, const DIM: usize, LG, T, NODE>
+where
+    NODE: MbrNode<P, DIM>,
 {
-    fn insert_into_root(&self, mut root: NODE, leaf: MbrLeaf<P, DIM, LG, T>) -> NODE;
+    fn insert_into_root(&self, root: NODE, leaf: MbrLeaf<P, DIM, LG, T>) -> NODE;
 
     fn preferred_min(&self) -> usize;
 
@@ -33,30 +33,28 @@ pub trait IndexInsert<P, DIM, LG, T, NODE>
     fn new_no_alloc_leaves(&self) -> NODE;
 }
 
-pub type RemoveReturn<P, DIM, LG, T, NODE> = (NODE, Vec<MbrLeaf<P, DIM, LG, T>>);
+pub type RemoveReturn<P: FP, const DIM: usize, LG, T, NODE> = (NODE, Vec<MbrLeaf<P, DIM, LG, T>>);
 
 /// Remove entries from the tree that match the query, but not the retain function f.
-pub trait IndexRemove<P, DIM, LG, T, NODE, I>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>,
-          NODE: MbrNode<P, DIM>,
-          I: IndexInsert<P, DIM, LG, T, NODE>
+pub trait IndexRemove<P: FP, const DIM: usize, LG, T, NODE, I>
+where
+    I: IndexInsert<P, DIM, LG, T, NODE>,
 {
-    fn remove_from_root<Q: MbrQuery<P, DIM, LG, T, NODE>, F: FnMut(&T) -> bool>
-        (&self,
-         mut root: NODE,
-         insert_index: &I,
-         query: Q,
-         mut f: F)
-         -> RemoveReturn<P, DIM, LG, T, NODE>;
+    fn remove_from_root<Q: MbrQuery<P, DIM, LG, T, NODE>, F: FnMut(&T) -> bool>(
+        &self,
+        root: NODE,
+        insert_index: &I,
+        query: Q,
+        f: F,
+    ) -> RemoveReturn<P, DIM, LG, T, NODE>;
 }
 
 /// Generic trait for splitting an MbrNode
-pub trait MbrNodeSplit<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
-    fn split<V: MbrLeafGeometry<P, DIM>>(&self,
-                                         min: usize,
-                                         mbr: &mut Rect<P, DIM>,
-                                         children: &mut Vec<V>)
-                                         -> (Rect<P, DIM>, Vec<V>);
+pub trait MbrNodeSplit<P: FP, const DIM: usize> {
+    fn split<V: MbrLeafGeometry<P, DIM>>(
+        &self,
+        min: usize,
+        mbr: &mut Rect<P, DIM>,
+        children: &mut Vec<V>,
+    ) -> (Rect<P, DIM>, Vec<V>);
 }

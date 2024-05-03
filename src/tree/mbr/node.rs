@@ -5,17 +5,13 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use num::{Signed, Float, Bounded, ToPrimitive, FromPrimitive};
-use std::ops::{MulAssign, AddAssign};
-use tree::mbr::{MbrLeaf, MbrLeafGeometry};
 use geometry::Rect;
 use std::fmt::Debug;
-use generic_array::ArrayLength;
+use tree::mbr::{MbrLeaf, MbrLeafGeometry};
+use FP;
 
 /// A node in an MbrMap
-pub trait MbrNode<P, DIM>: MbrLeafGeometry<P, DIM>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
+pub trait MbrNode<P: FP, const DIM: usize>: MbrLeafGeometry<P, DIM> {
     /// Create an empty leaf level
     fn new_leaves() -> Self;
 
@@ -44,9 +40,7 @@ pub trait MbrNode<P, DIM>: MbrLeafGeometry<P, DIM>
 
 /// Level node of a tree. Either contains other levels or leaves
 #[derive(Debug)]
-pub enum RTreeNode<P, DIM, LG, T>
-    where DIM: ArrayLength<P> + ArrayLength<(P, P)>
-{
+pub enum RTreeNode<P: FP, const DIM: usize, LG, T> {
     /// Contains only other levels
     Level {
         mbr: Rect<P, DIM>,
@@ -59,23 +53,28 @@ pub enum RTreeNode<P, DIM, LG, T>
     },
 }
 
-impl<P, DIM, LG, T> MbrNode<P, DIM> for RTreeNode<P, DIM, LG, T>
-    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
-          DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LG: MbrLeafGeometry<P, DIM> {
-
+impl<P: FP, const DIM: usize, LG, T> MbrNode<P, DIM> for RTreeNode<P, DIM, LG, T>
+where
+    LG: MbrLeafGeometry<P, DIM>,
+{
     fn new_leaves() -> RTreeNode<P, DIM, LG, T> {
-        RTreeNode::Leaves{mbr: Rect::max_inverted(), children: Vec::new()}
+        RTreeNode::Leaves {
+            mbr: Rect::max_inverted(),
+            children: Vec::new(),
+        }
     }
 
     fn new_no_alloc() -> RTreeNode<P, DIM, LG, T> {
-        RTreeNode::Leaves{mbr: Rect::max_inverted(), children: Vec::with_capacity(0)}
+        RTreeNode::Leaves {
+            mbr: Rect::max_inverted(),
+            children: Vec::with_capacity(0),
+        }
     }
 
     fn has_leaves(&self) -> bool {
         match *self {
-            RTreeNode::Level{..} => false,
-            RTreeNode::Leaves{..} => true,
+            RTreeNode::Level { .. } => false,
+            RTreeNode::Leaves { .. } => true,
         }
     }
 
@@ -85,39 +84,37 @@ impl<P, DIM, LG, T> MbrNode<P, DIM> for RTreeNode<P, DIM, LG, T>
 
     fn mbr(&self) -> &Rect<P, DIM> {
         match *self {
-            RTreeNode::Level{ref mbr, ..} => mbr,
-            RTreeNode::Leaves{ref mbr, ..} => mbr,
+            RTreeNode::Level { ref mbr, .. } => mbr,
+            RTreeNode::Leaves { ref mbr, .. } => mbr,
         }
     }
 
     fn mbr_mut(&mut self) -> &mut Rect<P, DIM> {
         match *self {
-            RTreeNode::Level{ref mut mbr, ..} => mbr,
-            RTreeNode::Leaves{ref mut mbr, ..} => mbr,
+            RTreeNode::Level { ref mut mbr, .. } => mbr,
+            RTreeNode::Leaves { ref mut mbr, .. } => mbr,
         }
     }
 
     fn len(&self) -> usize {
         match *self {
-            RTreeNode::Level{ref children, ..} => children.len(),
-            RTreeNode::Leaves{ref children, ..} => children.len(),
+            RTreeNode::Level { ref children, .. } => children.len(),
+            RTreeNode::Leaves { ref children, .. } => children.len(),
         }
     }
 
     fn is_empty(&self) -> bool {
         match *self {
-            RTreeNode::Level{ref children, ..} => children.is_empty(),
-            RTreeNode::Leaves{ref children, ..} => children.is_empty(),
+            RTreeNode::Level { ref children, .. } => children.is_empty(),
+            RTreeNode::Leaves { ref children, .. } => children.is_empty(),
         }
     }
 }
 
-
-impl<P, DIM, LG, T> MbrLeafGeometry<P, DIM> for RTreeNode<P, DIM, LG, T>
-    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
-          DIM: ArrayLength<P> + ArrayLength<(P,P)>,
-          LG: MbrLeafGeometry<P, DIM> {
-
+impl<P: FP, const DIM: usize, LG, T> MbrLeafGeometry<P, DIM> for RTreeNode<P, DIM, LG, T>
+where
+    LG: MbrLeafGeometry<P, DIM>,
+{
     fn dim(&self) -> usize {
         self.mbr().dim()
     }

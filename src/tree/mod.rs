@@ -8,6 +8,7 @@
 //! A collection of spatial trees
 
 pub mod mbr;
+mod xmbr;
 
 //pub mod xmbr;
 

@@ -5,12 +5,10 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use num::{Zero, One, Signed, Float, Bounded, ToPrimitive, FromPrimitive, pow};
-use std::ops::{MulAssign, AddAssign};
-use geometry::{Shapes, Point, LineSegment, Rect};
-use std::fmt::Debug;
+use geometry::{LineSegment, Point, Rect, Shapes};
+use num::{pow, FromPrimitive, One, Zero};
 use std::ops::{Deref, DerefMut};
-use generic_array::ArrayLength;
+use FP;
 
 /// The minimum functionality required to insert leaf geometry into `MbrMap`
 /// Until the rust compiler allows compile-time generic integers, we'll be using generic_array's `ArrayLength` to specify
@@ -18,7 +16,7 @@ use generic_array::ArrayLength;
 ///
 /// The parameter `mbr` represents a minimum bounding rectangle.
 /// An mbr whose corners are at (x1, y1), (x2, y2) will have the corresponding edges: (x1, x2), (y1, y2)
-pub trait MbrLeafGeometry<P, DIM: ArrayLength<P> + ArrayLength<(P, P)>> {
+pub trait MbrLeafGeometry<P: FP, const DIM: usize> {
     /// The geometry's dimension count
     fn dim(&self) -> usize;
 
@@ -48,10 +46,7 @@ pub trait MbrLeafGeometry<P, DIM: ArrayLength<P> + ArrayLength<(P, P)>> {
     fn area_overlapped_with_mbr(&self, mbr: &Rect<P, DIM>) -> P;
 }
 
-impl<P, DIM> MbrLeafGeometry<P, DIM> for Point<P, DIM>
-    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
-    DIM: ArrayLength<P> + ArrayLength<(P,P)>
-{
+impl<P: FP, const DIM: usize> MbrLeafGeometry<P, DIM> for Point<P, DIM> {
     fn dim(&self) -> usize {
         self.coords.len()
     }
@@ -69,7 +64,7 @@ impl<P, DIM> MbrLeafGeometry<P, DIM> for Point<P, DIM>
     }
 
     fn expand_mbr_to_fit(&self, mbr: &mut Rect<P, DIM>) {
-        for (&mut(ref mut x, ref mut y), &z) in izip!(mbr.deref_mut(), self.deref()){
+        for (&mut (ref mut x, ref mut y), &z) in izip!(mbr.deref_mut(), self.deref()) {
             *x = x.min(z);
             *y = y.max(z);
         }
@@ -78,8 +73,9 @@ impl<P, DIM> MbrLeafGeometry<P, DIM> for Point<P, DIM>
     fn distance_from_mbr_center(&self, mbr: &Rect<P, DIM>) -> P {
         let two = FromPrimitive::from_usize(2).unwrap();
         let dist: P = izip!(mbr.deref(), self.deref())
-            .fold(Zero::zero(),
-                |distance, (&(x, y), &z)| distance + pow((((x + y)/two) - z), 2));
+            .fold(Zero::zero(), |distance, (&(x, y), &z)| {
+                distance + pow((((x + y) / two) - z), 2)
+            });
         dist.sqrt()
     }
 
@@ -88,8 +84,8 @@ impl<P, DIM> MbrLeafGeometry<P, DIM> for Point<P, DIM>
     }
 
     fn overlapped_by_mbr(&self, mbr: &Rect<P, DIM>) -> bool {
-        for (&(x, y), &z) in izip!(mbr.deref(), self.deref()){
-            if z < x ||  y < z {
+        for (&(x, y), &z) in izip!(mbr.deref(), self.deref()) {
+            if z < x || y < z {
                 return false;
             }
         }
@@ -102,11 +98,7 @@ impl<P, DIM> MbrLeafGeometry<P, DIM> for Point<P, DIM>
     }
 }
 
-impl<P, DIM> MbrLeafGeometry<P, DIM> for LineSegment<P, DIM>
-    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
-    DIM: ArrayLength<P> + ArrayLength<(P,P)>
-{
-
+impl<P: FP, const DIM: usize> MbrLeafGeometry<P, DIM> for LineSegment<P, DIM> {
     fn dim(&self) -> usize {
         self.x.dim()
     }
@@ -115,11 +107,19 @@ impl<P, DIM> MbrLeafGeometry<P, DIM> for LineSegment<P, DIM>
     }
 
     fn min_for_axis(&self, dim: usize) -> P {
-        self.x.coords.get(dim).unwrap().min(*self.y.coords.get(dim).unwrap())
+        self.x
+            .coords
+            .get(dim)
+            .unwrap()
+            .min(*self.y.coords.get(dim).unwrap())
     }
 
     fn max_for_axis(&self, dim: usize) -> P {
-        self.x.coords.get(dim).unwrap().max(*self.y.coords.get(dim).unwrap())
+        self.x
+            .coords
+            .get(dim)
+            .unwrap()
+            .max(*self.y.coords.get(dim).unwrap())
     }
 
     fn expand_mbr_to_fit(&self, mbr: &mut Rect<P, DIM>) {
@@ -129,9 +129,12 @@ impl<P, DIM> MbrLeafGeometry<P, DIM> for LineSegment<P, DIM>
 
     fn distance_from_mbr_center(&self, mbr: &Rect<P, DIM>) -> P {
         let two = FromPrimitive::from_usize(2).unwrap();
-        let dist: P = izip!(mbr.deref(), self.x.deref(), self.y.deref())
-            .fold(Zero::zero(),
-                |distance, (&(x1, y1), &x2, &y2)| distance + pow(((x1 + y1)/two - (x2 + y2)/two), 2));
+        let dist: P = izip!(mbr.deref(), self.x.deref(), self.y.deref()).fold(
+            Zero::zero(),
+            |distance, (&(x1, y1), &x2, &y2)| {
+                distance + pow(((x1 + y1) / two - (x2 + y2) / two), 2)
+            },
+        );
         dist.sqrt()
     }
 
@@ -149,11 +152,7 @@ impl<P, DIM> MbrLeafGeometry<P, DIM> for LineSegment<P, DIM>
     }
 }
 
-impl<P, DIM> MbrLeafGeometry<P, DIM> for Rect<P, DIM>
-    where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug,
-          DIM: ArrayLength<P> + ArrayLength<(P,P)>
-{
-
+impl<P: FP, const DIM: usize> MbrLeafGeometry<P, DIM> for Rect<P, DIM> {
     fn dim(&self) -> usize {
         self.edges.len()
     }
@@ -181,10 +180,12 @@ impl<P, DIM> MbrLeafGeometry<P, DIM> for Rect<P, DIM>
 
     fn distance_from_mbr_center(&self, mbr: &Rect<P, DIM>) -> P {
         let two = FromPrimitive::from_usize(2).unwrap();
-        let dist: P = izip!(mbr.deref(), self.deref())
-            .fold(Zero::zero(), |distance, (&(x1, y1), &(x2, y2))| {
+        let dist: P = izip!(mbr.deref(), self.deref()).fold(
+            Zero::zero(),
+            |distance, (&(x1, y1), &(x2, y2))| {
                 distance + pow(((x1 + y1) / two - (x2 + y2) / two), 2)
-            });
+            },
+        );
         dist.sqrt()
     }
 
@@ -211,19 +212,14 @@ impl<P, DIM> MbrLeafGeometry<P, DIM> for Rect<P, DIM>
             area * (y1.min(y2) - x1.max(x2)).max(Zero::zero())
         })
     }
-
 }
 
-impl<P, DIM> MbrLeafGeometry<P, DIM> for Shapes<P, DIM>
-where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPrimitive + Copy + Debug + Default,
-    DIM: ArrayLength<P> + ArrayLength<(P,P)>
-{
-
+impl<P: FP, const DIM: usize> MbrLeafGeometry<P, DIM> for Shapes<P, DIM> {
     fn dim(&self) -> usize {
         match *self {
             Shapes::Point(ref point) => point.dim(),
             Shapes::LineSegment(ref linesegment) => linesegment.dim(),
-            Shapes::Rect(ref rect) => rect.dim()
+            Shapes::Rect(ref rect) => rect.dim(),
         }
     }
 
@@ -231,7 +227,7 @@ where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPr
         match *self {
             Shapes::Point(ref point) => point.area(),
             Shapes::LineSegment(ref linesegment) => linesegment.area(),
-            Shapes::Rect(ref rect) => rect.area()
+            Shapes::Rect(ref rect) => rect.area(),
         }
     }
 
@@ -239,7 +235,7 @@ where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPr
         match *self {
             Shapes::Point(ref point) => point.min_for_axis(dim),
             Shapes::LineSegment(ref linesegment) => linesegment.min_for_axis(dim),
-            Shapes::Rect(ref rect) => rect.min_for_axis(dim)
+            Shapes::Rect(ref rect) => rect.min_for_axis(dim),
         }
     }
 
@@ -247,7 +243,7 @@ where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPr
         match *self {
             Shapes::Point(ref point) => point.max_for_axis(dim),
             Shapes::LineSegment(ref linesegment) => linesegment.max_for_axis(dim),
-            Shapes::Rect(ref rect) => rect.max_for_axis(dim)
+            Shapes::Rect(ref rect) => rect.max_for_axis(dim),
         }
     }
 
@@ -255,7 +251,7 @@ where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPr
         match *self {
             Shapes::Point(ref point) => point.expand_mbr_to_fit(mbr),
             Shapes::LineSegment(ref linesegment) => linesegment.expand_mbr_to_fit(mbr),
-            Shapes::Rect(ref rect) => rect.expand_mbr_to_fit(mbr)
+            Shapes::Rect(ref rect) => rect.expand_mbr_to_fit(mbr),
         }
     }
 
@@ -263,7 +259,7 @@ where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPr
         match *self {
             Shapes::Point(ref point) => point.distance_from_mbr_center(mbr),
             Shapes::LineSegment(ref linesegment) => linesegment.distance_from_mbr_center(mbr),
-            Shapes::Rect(ref rect) => rect.distance_from_mbr_center(mbr)
+            Shapes::Rect(ref rect) => rect.distance_from_mbr_center(mbr),
         }
     }
 
@@ -271,7 +267,7 @@ where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPr
         match *self {
             Shapes::Point(ref point) => point.contained_by_mbr(mbr),
             Shapes::LineSegment(ref linesegment) => linesegment.contained_by_mbr(mbr),
-            Shapes::Rect(ref rect) => rect.contained_by_mbr(mbr)
+            Shapes::Rect(ref rect) => rect.contained_by_mbr(mbr),
         }
     }
 
@@ -279,7 +275,7 @@ where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPr
         match *self {
             Shapes::Point(ref point) => point.overlapped_by_mbr(mbr),
             Shapes::LineSegment(ref linesegment) => linesegment.overlapped_by_mbr(mbr),
-            Shapes::Rect(ref rect) => rect.overlapped_by_mbr(mbr)
+            Shapes::Rect(ref rect) => rect.overlapped_by_mbr(mbr),
         }
     }
 
@@ -287,19 +283,16 @@ where P: Float + Signed + Bounded + MulAssign + AddAssign + ToPrimitive + FromPr
         match *self {
             Shapes::Point(ref point) => point.area_overlapped_with_mbr(mbr),
             Shapes::LineSegment(ref linesegment) => linesegment.area_overlapped_with_mbr(mbr),
-            Shapes::Rect(ref rect) => rect.area_overlapped_with_mbr(mbr)
+            Shapes::Rect(ref rect) => rect.area_overlapped_with_mbr(mbr),
         }
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::ops::Deref;
-    use typenum::consts::U3;
-    use geometry::{Shapes, Point, LineSegment, Rect};
-    use generic_array::GenericArray;
     use super::*;
+    use geometry::{LineSegment, Point, Rect, Shapes};
+    use std::ops::Deref;
 
     const ONE: [f64; 3] = [1.0f64, 1.0f64, 1.0f64];
     const ZERO: [f64; 3] = [0.0f64, 0.0f64, 0.0f64];
@@ -311,14 +304,14 @@ mod tests {
 
     #[test]
     fn point() {
-        let point: Point<f64, U3> = Point::new(GenericArray::new());
+        let point: Point<f64, 3> = Point::new([0.0; 3]);
         for i in point.deref() {
             assert_relative_eq!(0.0f64, i);
         }
 
-        let zero: Shapes<f64, U3> = Shapes::Point(Point::from_slice(&ZERO));
-        let one: Shapes<f64, U3> = Shapes::Point(Point::from_slice(&ONE));
-        let neg_one: Shapes<f64, U3> = Shapes::Point(Point::from_slice(&NEG_ONE));
+        let zero: Shapes<f64, 3> = Shapes::Point(Point::from_slice(&ZERO));
+        let one: Shapes<f64, 3> = Shapes::Point(Point::from_slice(&ONE));
+        let neg_one: Shapes<f64, 3> = Shapes::Point(Point::from_slice(&NEG_ONE));
 
         // Shape tests
         // dim
@@ -340,9 +333,11 @@ mod tests {
         }
 
         // distance_from_mbr_center
-        assert_relative_eq!(EXPECTED_DISTANCE,
-                            zero.distance_from_mbr_center(&bounding_mbr),
-                            max_relative = 0.00000001);
+        assert_relative_eq!(
+            EXPECTED_DISTANCE,
+            zero.distance_from_mbr_center(&bounding_mbr),
+            max_relative = 0.00000001
+        );
 
         // contained_by_mbr
         assert!(zero.contained_by_mbr(&bounding_mbr));
@@ -361,12 +356,12 @@ mod tests {
     #[test]
     fn line_segment() {
         // contained
-        let zero_one: Shapes<f64, U3> = Shapes::LineSegment(LineSegment::from_slices(&ZERO, &ONE));
+        let zero_one: Shapes<f64, 3> = Shapes::LineSegment(LineSegment::from_slices(&ZERO, &ONE));
         // overlap
-        let neg_one_one: Shapes<f64, U3> = Shapes::LineSegment(LineSegment::from_slices(&NEG_ONE,
-                                                                                        &ONE));
+        let neg_one_one: Shapes<f64, 3> =
+            Shapes::LineSegment(LineSegment::from_slices(&NEG_ONE, &ONE));
         // outside
-        let neg_two_neg_one: Shapes<f64, U3> =
+        let neg_two_neg_one: Shapes<f64, 3> =
             Shapes::LineSegment(LineSegment::from_slices(&NEG_TWO, &NEG_ONE));
 
         // Shape tests
@@ -392,9 +387,11 @@ mod tests {
         }
 
         // distance_from_mbr_center
-        assert_relative_eq!(EXPECTED_DISTANCE,
-                            neg_one_one.distance_from_mbr_center(&bounding_mbr),
-                            max_relative = 0.00000001);
+        assert_relative_eq!(
+            EXPECTED_DISTANCE,
+            neg_one_one.distance_from_mbr_center(&bounding_mbr),
+            max_relative = 0.00000001
+        );
 
         // contained_by_mbr
         assert!(zero_one.contained_by_mbr(&bounding_mbr));
@@ -412,11 +409,10 @@ mod tests {
 
     #[test]
     fn rect() {
-
-        let g_one: GenericArray<f64, U3> = arr![f64; 1.0f64, 1.0f64, 1.0f64];
-        let g_zero: GenericArray<f64, U3> = arr![f64; 0.0f64, 0.0f64, 0.0f64];
-        let g_neg_one: GenericArray<f64, U3> = arr![f64; -1.0f64, -1.0f64, -1.0f64];
-        let g_neg_two: GenericArray<f64, U3> = arr![f64; -2.0f64, -2.0f64, -2.0f64];
+        let g_one = [1.0f64, 1.0f64, 1.0f64];
+        let g_zero = [0.0f64, 0.0f64, 0.0f64];
+        let g_neg_one = [-1.0f64, -1.0f64, -1.0f64];
+        let g_neg_two = [-2.0f64, -2.0f64, -2.0f64];
 
         // contained
         let zero_one = Rect::from_corners(g_zero.clone(), g_one.clone());
@@ -447,9 +443,11 @@ mod tests {
         }
 
         // distance_from_mbr_center
-        assert_relative_eq!(EXPECTED_DISTANCE,
-                            neg_one_one.distance_from_mbr_center(&bounding_mbr),
-                            max_relative = 0.00000001);
+        assert_relative_eq!(
+            EXPECTED_DISTANCE,
+            neg_one_one.distance_from_mbr_center(&bounding_mbr),
+            max_relative = 0.00000001
+        );
 
         // contained_by_mbr
         assert!(zero_one.contained_by_mbr(&bounding_mbr));

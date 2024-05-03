@@ -8,37 +8,43 @@
 //! Various Vec Extensions
 
 trait RetainPart<T, F>
-    where F: FnMut(&T) -> bool
+where
+    F: FnMut(&T) -> bool,
 {
-    fn retain_part(&mut self, mut f: F) -> usize;
+    fn retain_part(&mut self, f: F) -> usize;
 }
 
 trait RetainMutPart<T, F>
-    where F: FnMut(&mut T) -> bool
+where
+    F: FnMut(&mut T) -> bool,
 {
-    fn retain_mut_part(&mut self, mut f: F) -> usize;
+    fn retain_mut_part(&mut self, f: F) -> usize;
 }
 
 pub trait RetainAndSplitOff<T, F>
-    where F: FnMut(&T) -> bool
+where
+    F: FnMut(&T) -> bool,
 {
-    fn retain_and_split_off(&mut self, mut f: F) -> Option<Vec<T>>;
+    fn retain_and_split_off(&mut self, f: F) -> Option<Vec<T>>;
 }
 
 pub trait RetainAndAppend<T, F>
-    where F: FnMut(&T) -> bool
+where
+    F: FnMut(&T) -> bool,
 {
-    fn retain_and_append(&mut self, m: &mut Vec<T>, mut f: F);
+    fn retain_and_append(&mut self, m: &mut Vec<T>, f: F);
 }
 
 pub trait RetainMut<T, F>
-    where F: FnMut(&mut T) -> bool
+where
+    F: FnMut(&mut T) -> bool,
 {
-    fn retain_mut(&mut self, mut f: F);
+    fn retain_mut(&mut self, f: F);
 }
 
 impl<T, F> RetainPart<T, F> for Vec<T>
-    where F: FnMut(&T) -> bool
+where
+    F: FnMut(&T) -> bool,
 {
     fn retain_part(&mut self, mut f: F) -> usize {
         let len = self.len();
@@ -59,7 +65,8 @@ impl<T, F> RetainPart<T, F> for Vec<T>
 }
 
 impl<T, F> RetainMutPart<T, F> for Vec<T>
-    where F: FnMut(&mut T) -> bool
+where
+    F: FnMut(&mut T) -> bool,
 {
     fn retain_mut_part(&mut self, mut f: F) -> usize {
         let len = self.len();
@@ -81,7 +88,8 @@ impl<T, F> RetainMutPart<T, F> for Vec<T>
 
 #[allow(unused_mut)]
 impl<T, F> RetainAndSplitOff<T, F> for Vec<T>
-    where F: FnMut(&T) -> bool
+where
+    F: FnMut(&T) -> bool,
 {
     fn retain_and_split_off(&mut self, mut f: F) -> Option<Vec<T>> {
         let len = self.len();
@@ -95,7 +103,8 @@ impl<T, F> RetainAndSplitOff<T, F> for Vec<T>
 
 #[allow(unused_mut)]
 impl<T, F> RetainAndAppend<T, F> for Vec<T>
-    where F: FnMut(&T) -> bool
+where
+    F: FnMut(&T) -> bool,
 {
     fn retain_and_append(&mut self, m: &mut Vec<T>, mut f: F) {
         let del = self.retain_part(f);
@@ -109,7 +118,8 @@ impl<T, F> RetainAndAppend<T, F> for Vec<T>
 
 #[allow(unused_mut)]
 impl<T, F> RetainMut<T, F> for Vec<T>
-    where F: FnMut(&mut T) -> bool
+where
+    F: FnMut(&mut T) -> bool,
 {
     fn retain_mut(&mut self, mut f: F) {
         let len = self.len();
@@ -126,13 +136,15 @@ mod tests {
     use std::cmp::PartialEq;
 
     trait ContainsAll<T>
-        where T: PartialEq
+    where
+        T: PartialEq,
     {
         fn contains_all(&self, that: &Vec<T>) -> bool;
     }
 
     impl<T> ContainsAll<T> for Vec<T>
-        where T: PartialEq
+    where
+        T: PartialEq,
     {
         fn contains_all(&self, items: &Vec<T>) -> bool {
             for item in items {
@@ -157,7 +169,6 @@ mod tests {
             assert!(split_v.len() == 3);
             assert!(right.contains_all(&split_v));
         }
-
     }
 
     #[test]
