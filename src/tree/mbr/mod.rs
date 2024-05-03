@@ -15,15 +15,15 @@ mod node;
 mod query;
 
 use std::marker::PhantomData;
-use tree::mbr::index::r::{Linear, Quadratic, RInsert, RRemove, SeedSplit};
-use tree::mbr::index::rstar::RStarInsert;
-use tree::mbr::index::{IndexInsert, MbrNodeSplit};
-pub use tree::mbr::leaf::MbrLeaf;
-pub use tree::mbr::leafgeometry::MbrLeafGeometry;
-pub use tree::mbr::map::{Iter, IterMut, MbrMap};
-pub use tree::mbr::node::{MbrNode, RTreeNode};
-pub use tree::mbr::query::{MbrQuery, MbrRectQuery};
-use FP;
+use crate::tree::mbr::index::r::{Linear, Quadratic, RInsert, RRemove, SeedSplit};
+use crate::tree::mbr::index::rstar::RStarInsert;
+use crate::tree::mbr::index::{IndexInsert, MbrNodeSplit};
+pub use crate::tree::mbr::leaf::MbrLeaf;
+pub use crate::tree::mbr::leafgeometry::MbrLeafGeometry;
+pub use crate::tree::mbr::map::{Iter, IterMut, MbrMap};
+pub use crate::tree::mbr::node::{MbrNode, RTreeNode};
+pub use crate::tree::mbr::query::{MbrQuery, MbrRectQuery};
+use crate::FP;
 
 /// Convenience struct for creating a new R Tree
 ///

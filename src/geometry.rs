@@ -11,7 +11,7 @@ use num::{Bounded, Float};
 use std::convert::{AsMut, AsRef, TryInto};
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
-use FP;
+use crate::FP;
 
 /// An n-dimensional point
 #[derive(Debug, Clone)]
@@ -105,7 +105,7 @@ impl<P: FP, const DIM: usize> Rect<P, DIM> {
 
     /// New Rect from corners
     pub fn from_corners(x: [P; DIM], y: [P; DIM]) -> Rect<P, DIM> {
-        use tree::mbr::MbrLeafGeometry;
+        use crate::tree::mbr::MbrLeafGeometry;
         let mut edges = Rect::max_inverted();
         Point::new(x).expand_mbr_to_fit(&mut edges);
         Point::new(y).expand_mbr_to_fit(&mut edges);

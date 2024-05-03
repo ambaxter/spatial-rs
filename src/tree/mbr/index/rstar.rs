@@ -5,16 +5,16 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use geometry::Rect;
+use crate::geometry::Rect;
 use num::{Float, Zero};
 use ordered_float::NotNan;
 use std::cmp;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ops::Range;
-use tree::mbr::index::{IndexInsert, AT_ROOT, DONT_FORCE_SPLIT, D_MAX, FORCE_SPLIT, NOT_AT_ROOT};
-use tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode, RTreeNode};
-use FP;
+use crate::tree::mbr::index::{IndexInsert, AT_ROOT, DONT_FORCE_SPLIT, D_MAX, FORCE_SPLIT, NOT_AT_ROOT};
+use crate::tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode, RTreeNode};
+use crate::FP;
 
 const D_REINSERT_P: f32 = 0.30f32;
 const D_SPLIT_P: f32 = 0.40f32;
@@ -421,7 +421,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use geometry::Rect;
+    use crate::geometry::Rect;
 
     #[test]
     fn margin() {

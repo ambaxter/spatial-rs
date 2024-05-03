@@ -8,4 +8,4 @@
 mod index;
 mod node;
 
-pub use tree::xmbr::node::XTreeNode;
+pub use crate::tree::xmbr::node::XTreeNode;

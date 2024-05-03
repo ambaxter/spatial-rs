@@ -7,9 +7,9 @@
 
 //! Specific implementations for inserting and removing leaves
 
-use geometry::Rect;
-use tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode, MbrQuery};
-use FP;
+use crate::geometry::Rect;
+use crate::tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode, MbrQuery};
+use crate::FP;
 pub mod r;
 pub mod rstar;
 

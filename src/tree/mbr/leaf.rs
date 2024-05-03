@@ -5,11 +5,11 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use geometry::Rect;
+use crate::geometry::Rect;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use tree::mbr::MbrLeafGeometry;
-use FP;
+use crate::tree::mbr::MbrLeafGeometry;
+use crate::FP;
 
 /// A tree leaf
 #[derive(Debug, Clone)]

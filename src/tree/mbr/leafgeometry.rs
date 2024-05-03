@@ -5,10 +5,10 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use geometry::{LineSegment, Point, Rect, Shapes};
+use crate::geometry::{LineSegment, Point, Rect, Shapes};
 use num::{pow, Float, FromPrimitive, One, Zero};
 use std::ops::{Deref, DerefMut};
-use FP;
+use crate::FP;
 
 /// The minimum functionality required to insert leaf geometry into `MbrMap`
 /// Until the rust compiler allows compile-time generic integers, we'll be using generic_array's `ArrayLength` to specify
@@ -285,7 +285,7 @@ impl<P: FP, const DIM: usize> MbrLeafGeometry<P, DIM> for Shapes<P, DIM> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use geometry::{LineSegment, Point, Rect, Shapes};
+    use crate::geometry::{LineSegment, Point, Rect, Shapes};
     use std::ops::Deref;
 
     const ONE: [f64; 3] = [1.0f64, 1.0f64, 1.0f64];

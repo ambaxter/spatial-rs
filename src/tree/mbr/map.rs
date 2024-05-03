@@ -10,10 +10,10 @@ use std::ops::Deref;
 use std::rc::Rc;
 use std::slice::{Iter as SliceIter, IterMut as SliceIterMut};
 
-use geometry::Rect;
-use tree::mbr::index::{IndexInsert, IndexRemove};
-use tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode, MbrQuery, MbrRectQuery, RTreeNode};
-use FP;
+use crate::geometry::Rect;
+use crate::tree::mbr::index::{IndexInsert, IndexRemove};
+use crate::tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode, MbrQuery, MbrRectQuery, RTreeNode};
+use crate::FP;
 
 /// The generic container interface for spatial maps. Will, at the very least, be able to support R, R+, R*, and X trees
 pub struct MbrMap<NODE, I, R> {

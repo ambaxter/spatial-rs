@@ -14,13 +14,13 @@ use itertools::Itertools;
 use num::{Bounded, One, Zero};
 use ordered_float::NotNan;
 
-use geometry::Rect;
-use tree::mbr::index::{
+use crate::geometry::Rect;
+use crate::tree::mbr::index::{
     IndexInsert, IndexRemove, MbrNodeSplit, RemoveReturn, AT_ROOT, D_MAX, NOT_AT_ROOT,
 };
-use tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode, MbrQuery, RTreeNode};
-use vecext::RetainAndAppend;
-use FP;
+use crate::tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode, MbrQuery, RTreeNode};
+use crate::vecext::RetainAndAppend;
+use crate::FP;
 
 #[derive(Debug)]
 #[must_use]

@@ -5,10 +5,10 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use geometry::Rect;
+use crate::geometry::Rect;
 use std::fmt::Debug;
-use tree::mbr::{MbrLeaf, MbrLeafGeometry};
-use FP;
+use crate::tree::mbr::{MbrLeaf, MbrLeafGeometry};
+use crate::FP;
 
 /// A node in an MbrMap
 pub trait MbrNode<P: FP, const DIM: usize>: MbrLeafGeometry<P, DIM> {

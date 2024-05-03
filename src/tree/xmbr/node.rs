@@ -5,10 +5,10 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use geometry::Rect;
+use crate::geometry::Rect;
 use std::fmt::Debug;
-use tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode};
-use FP;
+use crate::tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode};
+use crate::FP;
 
 /// Level node of a tree. Either contains other levels or leaves
 #[derive(Debug)]
