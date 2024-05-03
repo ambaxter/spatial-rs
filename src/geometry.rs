@@ -7,8 +7,8 @@
 
 //! Various geometric shapes to insert into spatial trees
 
-use num::Bounded;
-use std::convert::{AsMut, AsRef};
+use num::{Bounded, Float};
+use std::convert::{AsMut, AsRef, TryInto};
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 use FP;
@@ -22,14 +22,14 @@ pub struct Point<P, const DIM: usize> {
 impl<P: FP, const DIM: usize> Point<P, DIM> {
     /// New Point from a `GenericArray`
     pub fn new(coords: [P; DIM]) -> Point<P, DIM> {
-        for coord in coords.deref() {
-            assert!(coord.is_finite(), "{:?} should be finite", coord);
+        for coord in &coords {
+            assert!(Float::is_finite(*coord), "{:?} should be finite", coord);
         }
         Point { coords }
     }
     /// New Point from a slice
     pub fn from_slice(slice: &[P]) -> Point<P, DIM> {
-        Point::new(slice.into())
+        Point::new(slice.try_into().unwrap())
     }
 }
 
@@ -37,25 +37,25 @@ impl<P: FP, const DIM: usize> Deref for Point<P, DIM> {
     type Target = [P];
 
     fn deref(&self) -> &[P] {
-        self.coords.deref()
+        &self.coords
     }
 }
 
 impl<P: FP, const DIM: usize> DerefMut for Point<P, DIM> {
     fn deref_mut(&mut self) -> &mut [P] {
-        self.coords.deref_mut()
+        &mut self.coords
     }
 }
 
 impl<P: FP, const DIM: usize> AsRef<[P]> for Point<P, DIM> {
     fn as_ref(&self) -> &[P] {
-        self.deref()
+        &self.coords
     }
 }
 
 impl<P: FP, const DIM: usize> AsMut<[P]> for Point<P, DIM> {
     fn as_mut(&mut self) -> &mut [P] {
-        self.deref_mut()
+        &mut self.coords
     }
 }
 
@@ -94,13 +94,13 @@ impl<P: FP, const DIM: usize> Rect<P, DIM> {
     /// New Rect from a `GenericArray`
     pub fn new(mut edges: [(P, P); DIM]) -> Rect<P, DIM> {
         // ensure that the edge coordinates are valid and ordered correctly
-        for &mut (ref mut x, ref mut y) in edges.deref_mut() {
-            assert!(x.is_finite(), "{:?} should be finite", x);
-            assert!(y.is_finite(), "{:?} should be finite", y);
-            *x = x.min(*y);
-            *y = x.max(*y);
+        for &mut (ref mut x, ref mut y) in &mut edges {
+            assert!(Float::is_finite(*x), "{:?} should be finite", x);
+            assert!(Float::is_finite(*y), "{:?} should be finite", y);
+            *x = Float::min(*x, *y);
+            *y = Float::max(*x, *y);
         }
-        Rect { edges: edges }
+        Rect { edges }
     }
 
     /// New Rect from corners
@@ -114,21 +114,13 @@ impl<P: FP, const DIM: usize> Rect<P, DIM> {
 
     /// An inverted Rect where ever dimension's (x, y) coordinates are (MAX, MIN). Simplifies finding boundaries.
     pub fn max_inverted() -> Rect<P, DIM> {
-        let mut edges = [P::default(); DIM];
-        for &mut (ref mut x, ref mut y) in edges.as_mut() {
-            *x = Bounded::max_value();
-            *y = Bounded::min_value();
-        }
+        let edges = [(Bounded::max_value(), Bounded::min_value()); DIM];
         Rect { edges }
     }
 
     /// The largest possible rect
     pub fn max() -> Rect<P, DIM> {
-        let mut edges = [P::default(); DIM];
-        for &mut (ref mut x, ref mut y) in edges.as_mut() {
-            *x = Bounded::min_value();
-            *y = Bounded::max_value();
-        }
+        let edges = [(Bounded::min_value(), Bounded::max_value()); DIM];
         Rect { edges }
     }
 }
@@ -137,13 +129,13 @@ impl<P: FP, const DIM: usize> Deref for Rect<P, DIM> {
     type Target = [(P, P)];
 
     fn deref(&self) -> &[(P, P)] {
-        self.edges.deref()
+        &self.edges
     }
 }
 
 impl<P: FP, const DIM: usize> DerefMut for Rect<P, DIM> {
     fn deref_mut(&mut self) -> &mut [(P, P)] {
-        self.edges.deref_mut()
+        &mut self.edges
     }
 }
 

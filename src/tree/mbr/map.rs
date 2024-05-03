@@ -121,7 +121,7 @@ where
     }
 }
 
-type LeafIter<'tree, P: FP, const DIM: usize, LG, T> = SliceIter<'tree, MbrLeaf<P, DIM, LG, T>>;
+type LeafIter<'tree, P, const DIM: usize, LG, T> = SliceIter<'tree, MbrLeaf<P, DIM, LG, T>>;
 
 /// Iterate through all `MbrNode::Leaves` matching a query
 struct LevelIter<'tree, P: FP, const DIM: usize, LG, T, Q>
@@ -230,8 +230,7 @@ where
     }
 }
 
-type LeafIterMut<'tree, P: FP, const DIM: usize, LG, T> =
-    SliceIterMut<'tree, MbrLeaf<P, DIM, LG, T>>;
+type LeafIterMut<'tree, P, const DIM: usize, LG, T> = SliceIterMut<'tree, MbrLeaf<P, DIM, LG, T>>;
 
 /// Iterate mutably through all `MbrNode::Leaves` matching a query
 struct LevelIterMut<'tree, P: FP, const DIM: usize, LG, T, Q>

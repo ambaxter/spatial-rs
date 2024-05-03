@@ -28,6 +28,8 @@ pub trait FP:
     + Copy
     + Debug
     + Default
+    + FloatCore
+    + TryInto<NotNan<Self>>
 {
 }
 
@@ -39,7 +41,8 @@ pub mod tree;
 mod vecext;
 
 use num::{Bounded, Float, FromPrimitive, Signed, ToPrimitive};
-use ordered_float::FloatCore;
+use ordered_float::{FloatCore, NotNan};
+use std::convert::TryInto;
 use std::fmt::Debug;
 use std::ops::{AddAssign, MulAssign};
 pub use tree::mbr::{RLinearTree, RQuadraticTree, RStar, RStarTree, RTree};

@@ -11,7 +11,7 @@ use ordered_float::NotNan;
 use std::cmp;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::ops::{Range};
+use std::ops::Range;
 use tree::mbr::index::{IndexInsert, AT_ROOT, DONT_FORCE_SPLIT, D_MAX, FORCE_SPLIT, NOT_AT_ROOT};
 use tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode, RTreeNode};
 use FP;
@@ -28,7 +28,6 @@ pub trait Margin<P> {
 impl<P: FP, const DIM: usize> Margin<P> for Rect<P, DIM> {
     fn margin(&self) -> P {
         self.edges
-            .deref()
             .iter()
             .fold(Zero::zero(), |margin, &(x, y)| margin + y - x)
     }
@@ -124,13 +123,16 @@ where
         leaf.expand_mbr_to_fit(&mut expanded);
         let mbr_area = mbr.area();
         let area_cost = expanded.area() - mbr_area;
-        (NotNan::from(area_cost), NotNan::from(mbr_area))
+        (
+            area_cost.try_into().ok().unwrap(),
+            mbr_area.try_into().ok().unwrap(),
+        )
     }
 
     fn overlap_cost(&self, mbr: &Rect<P, DIM>, leaf: &MbrLeaf<P, DIM, LG, T>) -> NotNan<P> {
         let overlap = leaf.area_overlapped_with_mbr(mbr);
         let overlap_cost = leaf.area() - overlap;
-        NotNan::from(overlap_cost)
+        overlap_cost.try_into().ok().unwrap()
     }
 
     fn overlap_area_cost(
@@ -177,7 +179,7 @@ where
         children: &mut Vec<MbrLeaf<P, DIM, LG, T>>,
     ) -> Vec<MbrLeaf<P, DIM, LG, T>> {
         // RI1 & RI2
-        children.sort_by_key(|a| NotNan::from(a.distance_from_mbr_center(mbr)));
+        children.sort_by_key(|a| a.distance_from_mbr_center(mbr).try_into().ok().unwrap());
         //RI3
         let split = children.split_off(self.reinsert_m);
         *mbr = Rect::max_inverted();
@@ -251,9 +253,9 @@ where
 
         for edge in 0..2 {
             if edge == 0 {
-                children.sort_by_key(|child| NotNan::from(child.min_for_axis(axis)));
+                children.sort_by_key(|child| child.min_for_axis(axis).try_into().ok().unwrap());
             } else {
-                children.sort_by_key(|child| NotNan::from(child.max_for_axis(axis)));
+                children.sort_by_key(|child| child.max_for_axis(axis).try_into().ok().unwrap());
             }
 
             for k in self.min_k..self.max_k {
@@ -297,14 +299,14 @@ where
             // CSA1
             .map(|axis| self.best_split_position_for_axis(axis, children))
             // CSA2
-            .min_by_key(|&(margin, _)| NotNan::from(margin))
+            .min_by_key(|&(margin, _)| margin.try_into().ok().unwrap())
             .unwrap()
             .1;
 
         if s_edge == 0 {
-            children.sort_by_key(|child| NotNan::from(child.min_for_axis(s_axis)));
+            children.sort_by_key(|child| child.min_for_axis(s_axis).try_into().ok().unwrap());
         } else {
-            children.sort_by_key(|child| NotNan::from(child.max_for_axis(s_axis)));
+            children.sort_by_key(|child| child.max_for_axis(s_axis).try_into().ok().unwrap());
         }
         // S3
         let split_children = children.split_off(s_index);

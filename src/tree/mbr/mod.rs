@@ -35,13 +35,13 @@ pub struct RTree<P: FP, const DIM: usize, LG, T> {
 }
 
 /// R Quadratic Tree Type
-pub type RQuadraticTree<P: FP, const DIM: usize, LG, T> = MbrMap<
+pub type RQuadraticTree<P, const DIM: usize, LG, T> = MbrMap<
     RTreeNode<P, DIM, LG, T>,
     RInsert<P, DIM, LG, T, SeedSplit<P, DIM, LG, T, Quadratic>>,
     RRemove<P, DIM, LG, T>,
 >;
 /// R Quadratic Tree Type
-pub type RLinearTree<P: FP, const DIM: usize, LG, T> = MbrMap<
+pub type RLinearTree<P, const DIM: usize, LG, T> = MbrMap<
     RTreeNode<P, DIM, LG, T>,
     RInsert<P, DIM, LG, T, SeedSplit<P, DIM, LG, T, Linear>>,
     RRemove<P, DIM, LG, T>,
@@ -89,7 +89,7 @@ where
 }
 
 /// R* Tree Type
-pub type RStarTree<P: FP, const DIM: usize, LG, T> =
+pub type RStarTree<P, const DIM: usize, LG, T> =
     MbrMap<RTreeNode<P, DIM, LG, T>, RStarInsert<P, DIM, LG, T>, RRemove<P, DIM, LG, T>>;
 
 /// Convenience struct for creating a new R* Tree

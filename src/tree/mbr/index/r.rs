@@ -19,7 +19,7 @@ use tree::mbr::index::{
     IndexInsert, IndexRemove, MbrNodeSplit, RemoveReturn, AT_ROOT, D_MAX, NOT_AT_ROOT,
 };
 use tree::mbr::{MbrLeaf, MbrLeafGeometry, MbrNode, MbrQuery, RTreeNode};
-use vecext::{RetainAndAppend};
+use vecext::RetainAndAppend;
 use FP;
 
 #[derive(Debug)]
@@ -45,7 +45,7 @@ where
 {
     fn pick_seed<V: MbrLeafGeometry<P, DIM>>(
         &self,
-        mbr: &Rect<P, DIM>,
+        _mbr: &Rect<P, DIM>,
         children: &Vec<V>,
     ) -> (usize, usize) {
         let (_, k, l) = children
@@ -60,7 +60,7 @@ where
                 (mbr.area() - k_child.area() - l_child.area(), k, l)
             })
             // PS2
-            .max_by_key(|&(j, _, _)| NotNan::from(j))
+            .max_by_key(|&(j, _, _)| j.try_into().ok().unwrap())
             .unwrap();
         (k, l)
     }
@@ -77,7 +77,7 @@ where
         mbr: &Rect<P, DIM>,
         children: &Vec<V>,
     ) -> (usize, usize) {
-        let mut widths = [P::default(), DIM];
+        let mut widths = [P::default(); DIM];
         izip!(widths.iter_mut(), mbr.deref()).for_each(|(width, &(min, max))| {
             *width = max - min;
             if *width <= Zero::zero() {
@@ -111,7 +111,7 @@ where
             // LPS2
             .map(|(width, &(lmax, li), &(gmin, gi))| (((gmin - lmax) / *width), li, gi))
             // LPS3
-            .max_by_key(|&(separation, _, _)| NotNan::from(separation))
+            .max_by_key(|&(separation, _, _)| separation.try_into().ok().unwrap())
             .unwrap();
 
         if k > l {
@@ -275,7 +275,10 @@ where
         let mbr_area = mbr.area();
         let expanded_area = expanded.area();
         let area_cost = expanded_area - mbr_area;
-        (NotNan::from(area_cost), NotNan::from(expanded_area))
+        (
+            area_cost.try_into().ok().unwrap(),
+            expanded_area.try_into().ok().unwrap(),
+        )
     }
 
     fn choose_subnode<'tree>(

@@ -33,11 +33,12 @@ where
     fn new_no_alloc_leaves(&self) -> NODE;
 }
 
-pub type RemoveReturn<P: FP, const DIM: usize, LG, T, NODE> = (NODE, Vec<MbrLeaf<P, DIM, LG, T>>);
+pub type RemoveReturn<P, const DIM: usize, LG, T, NODE> = (NODE, Vec<MbrLeaf<P, DIM, LG, T>>);
 
 /// Remove entries from the tree that match the query, but not the retain function f.
 pub trait IndexRemove<P: FP, const DIM: usize, LG, T, NODE, I>
 where
+    NODE: MbrNode<P, DIM>,
     I: IndexInsert<P, DIM, LG, T, NODE>,
 {
     fn remove_from_root<Q: MbrQuery<P, DIM, LG, T, NODE>, F: FnMut(&T) -> bool>(

@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 
 use geometry::{LineSegment, Point, Rect, Shapes};
-use num::{pow, FromPrimitive, One, Zero};
+use num::{pow, Float, FromPrimitive, One, Zero};
 use std::ops::{Deref, DerefMut};
 use FP;
 
@@ -65,8 +65,8 @@ impl<P: FP, const DIM: usize> MbrLeafGeometry<P, DIM> for Point<P, DIM> {
 
     fn expand_mbr_to_fit(&self, mbr: &mut Rect<P, DIM>) {
         for (&mut (ref mut x, ref mut y), &z) in izip!(mbr.deref_mut(), self.deref()) {
-            *x = x.min(z);
-            *y = y.max(z);
+            *x = Float::min(*x, z);
+            *y = Float::max(*y, z);
         }
     }
 
@@ -74,7 +74,7 @@ impl<P: FP, const DIM: usize> MbrLeafGeometry<P, DIM> for Point<P, DIM> {
         let two = FromPrimitive::from_usize(2).unwrap();
         let dist: P = izip!(mbr.deref(), self.deref())
             .fold(Zero::zero(), |distance, (&(x, y), &z)| {
-                distance + pow((((x + y) / two) - z), 2)
+                distance + pow(((x + y) / two) - z, 2)
             });
         dist.sqrt()
     }
@@ -107,19 +107,17 @@ impl<P: FP, const DIM: usize> MbrLeafGeometry<P, DIM> for LineSegment<P, DIM> {
     }
 
     fn min_for_axis(&self, dim: usize) -> P {
-        self.x
-            .coords
-            .get(dim)
-            .unwrap()
-            .min(*self.y.coords.get(dim).unwrap())
+        Float::min(
+            *self.x.coords.get(dim).unwrap(),
+            *self.y.coords.get(dim).unwrap(),
+        )
     }
 
     fn max_for_axis(&self, dim: usize) -> P {
-        self.x
-            .coords
-            .get(dim)
-            .unwrap()
-            .max(*self.y.coords.get(dim).unwrap())
+        Float::max(
+            *self.x.coords.get(dim).unwrap(),
+            *self.y.coords.get(dim).unwrap(),
+        )
     }
 
     fn expand_mbr_to_fit(&self, mbr: &mut Rect<P, DIM>) {
@@ -129,12 +127,10 @@ impl<P: FP, const DIM: usize> MbrLeafGeometry<P, DIM> for LineSegment<P, DIM> {
 
     fn distance_from_mbr_center(&self, mbr: &Rect<P, DIM>) -> P {
         let two = FromPrimitive::from_usize(2).unwrap();
-        let dist: P = izip!(mbr.deref(), self.x.deref(), self.y.deref()).fold(
-            Zero::zero(),
-            |distance, (&(x1, y1), &x2, &y2)| {
-                distance + pow(((x1 + y1) / two - (x2 + y2) / two), 2)
-            },
-        );
+        let dist: P = izip!(mbr.deref(), self.x.deref(), self.y.deref())
+            .fold(Zero::zero(), |distance, (&(x1, y1), &x2, &y2)| {
+                distance + pow((x1 + y1) / two - (x2 + y2) / two, 2)
+            });
         dist.sqrt()
     }
 
@@ -173,19 +169,17 @@ impl<P: FP, const DIM: usize> MbrLeafGeometry<P, DIM> for Rect<P, DIM> {
 
     fn expand_mbr_to_fit(&self, mbr: &mut Rect<P, DIM>) {
         for (&mut (ref mut x1, ref mut y1), &(x2, y2)) in izip!(mbr.deref_mut(), self.deref()) {
-            *x1 = x1.min(x2);
-            *y1 = y1.max(y2);
+            *x1 = Float::min(*x1, x2);
+            *y1 = Float::max(*y1, y2);
         }
     }
 
     fn distance_from_mbr_center(&self, mbr: &Rect<P, DIM>) -> P {
         let two = FromPrimitive::from_usize(2).unwrap();
-        let dist: P = izip!(mbr.deref(), self.deref()).fold(
-            Zero::zero(),
-            |distance, (&(x1, y1), &(x2, y2))| {
-                distance + pow(((x1 + y1) / two - (x2 + y2) / two), 2)
-            },
-        );
+        let dist: P = izip!(mbr.deref(), self.deref())
+            .fold(Zero::zero(), |distance, (&(x1, y1), &(x2, y2))| {
+                distance + pow((x1 + y1) / two - (x2 + y2) / two, 2)
+            });
         dist.sqrt()
     }
 
@@ -209,7 +203,7 @@ impl<P: FP, const DIM: usize> MbrLeafGeometry<P, DIM> for Rect<P, DIM> {
 
     fn area_overlapped_with_mbr(&self, mbr: &Rect<P, DIM>) -> P {
         izip!(mbr.deref(), self.deref()).fold(One::one(), |area, (&(x1, y1), &(x2, y2))| {
-            area * (y1.min(y2) - x1.max(x2)).max(Zero::zero())
+            area * Float::max(Float::min(y1, y2) - Float::max(x1, x2), Zero::zero())
         })
     }
 }
